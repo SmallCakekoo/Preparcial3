@@ -257,8 +257,8 @@ class MainPage extends HTMLElement {
 
     container.innerHTML = `
       <div class="auth-options">
-        <h2>Bienvenido a la aplicación de tareas</h2>
-        <p>Organiza tus tareas, alcanza tus metas y disfruta del proceso.</p>
+        <h2>Bienvenido a la minired social.</h2>
+        <p>Conéctate con amigos y comparte tus pensamientos.</p>
         <p class="login-message">Inicia sesión o regístrate para comenzar.</p>
         
         <div class="buttons">
