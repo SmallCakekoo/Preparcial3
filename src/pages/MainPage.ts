@@ -1,4 +1,6 @@
-import { checkAuthState } from "../services/firebase/auth-service";
+import { store } from "../flux/Store";
+import { AppDispatcher } from "../flux/Dispatcher";
+import { AuthActionsType, NavigationActionsType } from "../flux/Actions";
 
 class MainPage extends HTMLElement {
   constructor() {
@@ -8,7 +10,23 @@ class MainPage extends HTMLElement {
 
   connectedCallback() {
     this.renderInitialStructure();
-    this.checkAuthentication();
+    store.subscribe(this.handleStateChange.bind(this));
+    AppDispatcher.dispatch({ type: AuthActionsType.CHECK_AUTH });
+  }
+
+  disconnectedCallback() {
+    store.unsubscribe(this.handleStateChange.bind(this));
+  }
+
+  handleStateChange(state: any) {
+    if (state.isAuthenticated) {
+      AppDispatcher.dispatch({
+        type: NavigationActionsType.NAVIGATE,
+        payload: { path: "/tasks" },
+      });
+    } else {
+      this.renderAuthOptions();
+    }
   }
 
   renderInitialStructure() {
@@ -232,64 +250,38 @@ class MainPage extends HTMLElement {
     `;
   }
 
-  checkAuthentication() {
-    // Verificar si el usuario está autenticado
-    checkAuthState((user) => {
-      if (user) {
-        // Usuario autenticado, redirigir a tareas
-        window.history.pushState({}, "", "/tasks");
-        const event = new CustomEvent("route-change", {
-          bubbles: true,
-          composed: true,
-          detail: { path: "/tasks" },
-        });
-        this.dispatchEvent(event);
-      } else {
-        // No autenticado, mostrar opciones de login/registro
-        this.renderAuthOptions();
-      }
-    });
-  }
-
   renderAuthOptions() {
-    const container = this.shadowRoot?.querySelector(".main-container");
-    if (!container) return;
+    const mainContainer = this.shadowRoot?.querySelector(".main-container");
+    if (!mainContainer) return;
 
-    container.innerHTML = `
-      <div class="auth-options">
-        <h2>Bienvenido a la minired social.</h2>
-        <p>Conéctate con amigos y comparte tus pensamientos.</p>
-        <p class="login-message">Inicia sesión o regístrate para comenzar.</p>
-        
-        <div class="buttons">
-          <button id="login-btn" class="primary-btn">Iniciar sesión</button>
-          <button id="register-btn" class="secondary-btn">Registrarse</button>
+    mainContainer.innerHTML = `
+      <div class="welcome-container">
+        <h1>Bienvenido a TaskMaster</h1>
+        <p>Tu aplicación de gestión de tareas personal</p>
+        <div class="auth-buttons">
+          <button id="login-btn">Iniciar Sesión</button>
+          <button class="secondary-btn" id="register-btn">Registrarse</button>
         </div>
       </div>
     `;
 
-    const loginBtn = this.shadowRoot?.querySelector("#login-btn");
+    const loginBtn = mainContainer.querySelector("#login-btn");
+    const registerBtn = mainContainer.querySelector("#register-btn");
+
     loginBtn?.addEventListener("click", () => {
-      window.history.pushState({}, "", "/login");
-      const event = new CustomEvent("route-change", {
-        bubbles: true,
-        composed: true,
-        detail: { path: "/login" },
+      AppDispatcher.dispatch({
+        type: NavigationActionsType.NAVIGATE,
+        payload: { path: "/login" },
       });
-      this.dispatchEvent(event);
     });
 
-    const registerBtn = this.shadowRoot?.querySelector("#register-btn");
     registerBtn?.addEventListener("click", () => {
-      window.history.pushState({}, "", "/register");
-      const event = new CustomEvent("route-change", {
-        bubbles: true,
-        composed: true,
-        detail: { path: "/register" },
+      AppDispatcher.dispatch({
+        type: NavigationActionsType.NAVIGATE,
+        payload: { path: "/register" },
       });
-      this.dispatchEvent(event);
     });
   }
 }
 
-export default MainPage;
+customElements.define("main-page", MainPage);

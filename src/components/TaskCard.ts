@@ -1,3 +1,8 @@
+import { store } from "../flux/Store";
+import { AppDispatcher } from "../flux/Dispatcher";
+import { TaskActionsType } from "../flux/Actions";
+import { Task } from "../types";
+
 class TaskCard extends HTMLElement {
   constructor() {
     super();
@@ -23,69 +28,29 @@ class TaskCard extends HTMLElement {
       btn.addEventListener("click", (e) => {
         const target = e.target as HTMLElement;
         const status = target.getAttribute("data-status");
-        const taskCard = this.shadowRoot?.querySelector(".task-card");
-        const statusElement = taskCard?.querySelector(".task-status");
+        const taskId = this.getAttribute("id");
 
-        if (taskCard && statusElement && status) {
-          // Actualizar la clase de la tarjeta
-          taskCard.className = "task-card " + status;
-
-          if (status === "completed") {
-            taskCard.classList.add("completed");
-          } else {
-            taskCard.classList.remove("completed");
-          }
-
-          // Actualizar el texto del estado
-          statusElement.textContent =
-            status === "todo"
-              ? "Por hacer"
-              : status === "in-progress"
-              ? "En progreso"
-              : "Completada";
-
-          // Actualizar la clase del estado para aplicar el color correcto
-          statusElement.className = "task-status " + status;
-
-          // Resaltar el botón activo
-          const allStatusBtns =
-            this.shadowRoot?.querySelectorAll(".status-btn");
-          allStatusBtns?.forEach((statusBtn) => {
-            if (statusBtn.getAttribute("data-status") === status) {
-              statusBtn.classList.add("active-status");
-            } else {
-              statusBtn.classList.remove("active-status");
-            }
+        if (status && taskId) {
+          AppDispatcher.dispatch({
+            type: TaskActionsType.UPDATE_TASK_STATUS,
+            payload: {
+              id: taskId,
+              status: status as Task["status"],
+            },
           });
-
-          // Emitir evento para notificar el cambio de estado
-          this.dispatchEvent(
-            new CustomEvent("task-status-changed", {
-              bubbles: true,
-              composed: true,
-              detail: {
-                id: this.getAttribute("id"),
-                status: status,
-              },
-            })
-          );
         }
       });
     });
 
-    // Agregar evento para el botón eliminar
     const deleteBtn = this.shadowRoot?.querySelector(".delete-btn");
     deleteBtn?.addEventListener("click", () => {
-      // Emitir un evento para notificar que la tarea debe ser eliminada
-      this.dispatchEvent(
-        new CustomEvent("task-deleted", {
-          bubbles: true,
-          composed: true,
-          detail: {
-            id: this.getAttribute("id"),
-          },
-        })
-      );
+      const taskId = this.getAttribute("id");
+      if (taskId) {
+        AppDispatcher.dispatch({
+          type: TaskActionsType.DELETE_TASK,
+          payload: { id: taskId },
+        });
+      }
     });
   }
 

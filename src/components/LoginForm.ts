@@ -1,4 +1,7 @@
 import { loginUser } from "../services/firebase/auth-service";
+import { store } from "../flux/Store";
+import { AppDispatcher } from "../flux/Dispatcher";
+import { AuthActionsType, NavigationActionsType } from "../flux/Actions";
 
 class LoginForm extends HTMLElement {
   constructor() {
@@ -9,6 +12,26 @@ class LoginForm extends HTMLElement {
   connectedCallback() {
     this.render();
     this.setupListeners();
+    store.subscribe(this.handleStateChange.bind(this));
+  }
+
+  disconnectedCallback() {
+    store.unsubscribe(this.handleStateChange.bind(this));
+  }
+
+  handleStateChange(state: any) {
+    const submitBtn = this.shadowRoot?.querySelector(
+      "button[type='submit']"
+    ) as HTMLButtonElement;
+    const errorMsg = this.shadowRoot?.querySelector(".error-message");
+
+    if (submitBtn && errorMsg) {
+      submitBtn.disabled = state.loading;
+      submitBtn.textContent = state.loading
+        ? "Iniciando sesión..."
+        : "Iniciar sesión";
+      errorMsg.textContent = state.error || "";
+    }
   }
 
   setupListeners() {
@@ -22,63 +45,51 @@ class LoginForm extends HTMLElement {
       const passwordInput = this.shadowRoot?.querySelector(
         "#password"
       ) as HTMLInputElement;
-      const errorMsg = this.shadowRoot?.querySelector(".error-message");
 
-      if (emailInput && passwordInput && errorMsg) {
+      if (emailInput && passwordInput) {
         const email = emailInput.value.trim();
         const password = passwordInput.value.trim();
 
         if (!email || !password) {
-          errorMsg.textContent = "Por favor, completa todos los campos";
+          AppDispatcher.dispatch({
+            type: AuthActionsType.LOGIN_ERROR,
+            payload: { error: "Por favor, completa todos los campos" },
+          });
           return;
         }
 
-        // Mostrar estado de carga
-        const submitBtn = this.shadowRoot?.querySelector(
-          "button[type='submit']"
-        ) as HTMLButtonElement;
-        if (submitBtn) {
-          submitBtn.disabled = true;
-          submitBtn.textContent = "Iniciando sesión...";
-        }
+        AppDispatcher.dispatch({ type: AuthActionsType.LOGIN_START });
 
-        // Intentar iniciar sesión
         const result = await loginUser(email, password);
 
         if (result.success) {
-          // Redirigir a la página de tareas
-          window.history.pushState({}, "", "/tasks");
-          const event = new CustomEvent("route-change", {
-            bubbles: true,
-            composed: true,
-            detail: { path: "/tasks" },
+          AppDispatcher.dispatch({
+            type: AuthActionsType.LOGIN_SUCCESS,
+            payload: { user: result.user },
           });
-          this.dispatchEvent(event);
-        } else {
-          // Mostrar error
-          errorMsg.textContent =
-            "Error al iniciar sesión. Verifica tus credenciales.";
 
-          // Restaurar botón
-          if (submitBtn) {
-            submitBtn.disabled = false;
-            submitBtn.textContent = "Iniciar sesión";
-          }
+          AppDispatcher.dispatch({
+            type: NavigationActionsType.NAVIGATE,
+            payload: { path: "/tasks" },
+          });
+        } else {
+          AppDispatcher.dispatch({
+            type: AuthActionsType.LOGIN_ERROR,
+            payload: {
+              error: "Error al iniciar sesión. Verifica tus credenciales.",
+            },
+          });
         }
       }
     });
 
-    // Enlace para ir a registro
     const registerLink = this.shadowRoot?.querySelector(".register-link");
     registerLink?.addEventListener("click", (e) => {
       e.preventDefault();
-      window.history.pushState({}, "", "/register");
-      const event = new CustomEvent("route-change", {
-        bubbles: true,
-        composed: true,
-        detail: { path: "/register" },
+      AppDispatcher.dispatch({
+        type: NavigationActionsType.NAVIGATE,
+        payload: { path: "/register" },
       });
-      this.dispatchEvent(event);
     });
   }
 

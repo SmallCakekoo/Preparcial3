@@ -1,17 +1,20 @@
+import { AppDispatcher } from "../flux/Dispatcher";
+import { NavigationActionsType } from "../flux/Actions";
+
 class FourPage extends HTMLElement {
-    constructor() {
-      super();
-      this.attachShadow({ mode: "open" });
-    }
-  
-    connectedCallback() {
-      this.render();
-    }
-  
-    render() {
-      if (!this.shadowRoot) return;
-  
-      this.shadowRoot.innerHTML = `
+  constructor() {
+    super();
+    this.attachShadow({ mode: "open" });
+  }
+
+  connectedCallback() {
+    this.render();
+  }
+
+  render() {
+    if (!this.shadowRoot) return;
+
+    this.shadowRoot.innerHTML = `
         <style>
           :host {
             display: block;
@@ -84,18 +87,15 @@ class FourPage extends HTMLElement {
           <button id="home-btn">Volver al inicio</button>
         </div>
       `;
-      
-      const homeBtn = this.shadowRoot.querySelector("#home-btn");
-      homeBtn?.addEventListener("click", () => {
-        const event = new CustomEvent("route-change", {
-          bubbles: true,
-          composed: true,
-          detail: { path: "/" },
-        });
-        this.dispatchEvent(event);
+
+    const homeBtn = this.shadowRoot.querySelector("#home-btn");
+    homeBtn?.addEventListener("click", () => {
+      AppDispatcher.dispatch({
+        type: NavigationActionsType.NAVIGATE,
+        payload: { path: "/" },
       });
-    }
+    });
   }
-  
-  export default FourPage;
-  
+}
+
+customElements.define("four-page", FourPage);

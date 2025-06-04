@@ -1,3 +1,8 @@
+import { store } from "../flux/Store";
+import { AppDispatcher } from "../flux/Dispatcher";
+import { TaskActionsType } from "../flux/Actions";
+import { Task } from "../types";
+
 class TaskForm extends HTMLElement {
   constructor() {
     super();
@@ -7,6 +12,21 @@ class TaskForm extends HTMLElement {
   connectedCallback() {
     this.render();
     this.setupListeners();
+    store.subscribe(this.handleStateChange.bind(this));
+  }
+
+  disconnectedCallback() {
+    store.unsubscribe(this.handleStateChange.bind(this));
+  }
+
+  handleStateChange(state: any) {
+    const submitBtn = this.shadowRoot?.querySelector(
+      "button[type='submit']"
+    ) as HTMLButtonElement;
+    if (submitBtn) {
+      submitBtn.disabled = state.loading;
+      submitBtn.textContent = state.loading ? "Añadiendo..." : "Añadir tarea";
+    }
   }
 
   setupListeners() {
@@ -22,24 +42,32 @@ class TaskForm extends HTMLElement {
       ) as HTMLTextAreaElement;
 
       if (titleInput && descriptionInput) {
-        const taskData = {
-          title: titleInput.value.trim(),
-          description: descriptionInput.value.trim(),
+        const title = titleInput.value.trim();
+        const description = descriptionInput.value.trim();
+
+        if (!title) {
+          AppDispatcher.dispatch({
+            type: TaskActionsType.TASK_ERROR,
+            payload: { error: "El título es requerido" },
+          });
+          return;
+        }
+
+        const task: Task = {
+          id: crypto.randomUUID(),
+          title,
+          description,
+          status: "todo",
+          createdAt: new Date(),
+          authorId: store.getState().currentUser?.uid || "anonymous",
         };
 
-        // Validar que al menos el título no esté vacío
-        if (taskData.title) {
-          const event = new CustomEvent("task-submitted", {
-            bubbles: true,
-            composed: true,
-            detail: taskData,
-          });
+        AppDispatcher.dispatch({
+          type: TaskActionsType.CREATE_TASK,
+          payload: { task },
+        });
 
-          this.dispatchEvent(event);
-
-          // Limpiar el formulario
-          form.reset();
-        }
+        form.reset();
       }
     });
   }

@@ -1,4 +1,7 @@
 import { registerUser } from "../services/firebase/auth-service";
+import { store } from "../flux/Store";
+import { AppDispatcher } from "../flux/Dispatcher";
+import { AuthActionsType, NavigationActionsType } from "../flux/Actions";
 
 class RegisterForm extends HTMLElement {
   constructor() {
@@ -9,6 +12,24 @@ class RegisterForm extends HTMLElement {
   connectedCallback() {
     this.render();
     this.setupListeners();
+    store.subscribe(this.handleStateChange.bind(this));
+  }
+
+  disconnectedCallback() {
+    store.unsubscribe(this.handleStateChange.bind(this));
+  }
+
+  handleStateChange(state: any) {
+    const submitBtn = this.shadowRoot?.querySelector(
+      "button[type='submit']"
+    ) as HTMLButtonElement;
+    const errorMsg = this.shadowRoot?.querySelector(".error-message");
+
+    if (submitBtn && errorMsg) {
+      submitBtn.disabled = state.loading;
+      submitBtn.textContent = state.loading ? "Registrando..." : "Registrarse";
+      errorMsg.textContent = state.error || "";
+    }
   }
 
   setupListeners() {
@@ -28,83 +49,79 @@ class RegisterForm extends HTMLElement {
       const confirmPasswordInput = this.shadowRoot?.querySelector(
         "#confirm-password"
       ) as HTMLInputElement;
-      const errorMsg = this.shadowRoot?.querySelector(".error-message");
 
       if (
         usernameInput &&
         emailInput &&
         passwordInput &&
-        confirmPasswordInput &&
-        errorMsg
+        confirmPasswordInput
       ) {
         const username = usernameInput.value.trim();
         const email = emailInput.value.trim();
         const password = passwordInput.value.trim();
         const confirmPassword = confirmPasswordInput.value.trim();
 
-        // Validaciones básicas
         if (!username || !email || !password || !confirmPassword) {
-          errorMsg.textContent = "Por favor, completa todos los campos";
+          AppDispatcher.dispatch({
+            type: AuthActionsType.REGISTER_ERROR,
+            payload: { error: "Por favor, completa todos los campos" },
+          });
           return;
         }
 
         if (password !== confirmPassword) {
-          errorMsg.textContent = "Las contraseñas no coinciden";
+          AppDispatcher.dispatch({
+            type: AuthActionsType.REGISTER_ERROR,
+            payload: { error: "Las contraseñas no coinciden" },
+          });
           return;
         }
 
         if (password.length < 6) {
-          errorMsg.textContent =
-            "La contraseña debe tener al menos 6 caracteres";
+          AppDispatcher.dispatch({
+            type: AuthActionsType.REGISTER_ERROR,
+            payload: {
+              error: "La contraseña debe tener al menos 6 caracteres",
+            },
+          });
           return;
         }
 
-        // Mostrar estado de carga
-        const submitBtn = this.shadowRoot?.querySelector(
-          "button[type='submit']"
-        ) as HTMLButtonElement;
-        if (submitBtn) {
-          submitBtn.disabled = true;
-          submitBtn.textContent = "Registrando...";
-        }
+        AppDispatcher.dispatch({ type: AuthActionsType.REGISTER_START });
 
-        // Intentar registrar al usuario
         const result = await registerUser(email, password, username);
 
         if (result.success) {
-          // Redirigir a la página de tareas
-          window.history.pushState({}, "", "/tasks");
-          const event = new CustomEvent("route-change", {
-            bubbles: true,
-            composed: true,
-            detail: { path: "/tasks" },
+          AppDispatcher.dispatch({
+            type: AuthActionsType.REGISTER_SUCCESS,
+            payload: {
+              user: result.user,
+              displayName: username,
+            },
           });
-          this.dispatchEvent(event);
-        } else {
-          // Mostrar error
-          errorMsg.textContent =
-            "Error al registrar. El correo podría estar en uso.";
 
-          // Restaurar botón
-          if (submitBtn) {
-            submitBtn.disabled = false;
-            submitBtn.textContent = "Registrarse";
-          }
+          AppDispatcher.dispatch({
+            type: NavigationActionsType.NAVIGATE,
+            payload: { path: "/tasks" },
+          });
+        } else {
+          AppDispatcher.dispatch({
+            type: AuthActionsType.REGISTER_ERROR,
+            payload: {
+              error: "Error al registrar. El correo podría estar en uso.",
+            },
+          });
         }
       }
     });
 
-    // Enlace para ir a login
     const loginLink = this.shadowRoot?.querySelector(".login-link");
     loginLink?.addEventListener("click", (e) => {
       e.preventDefault();
-      window.history.pushState({}, "", "/login");
-      const event = new CustomEvent("route-change", {
-        bubbles: true,
-        composed: true,
-        detail: { path: "/login" },
+      AppDispatcher.dispatch({
+        type: NavigationActionsType.NAVIGATE,
+        payload: { path: "/login" },
       });
-      this.dispatchEvent(event);
     });
   }
 

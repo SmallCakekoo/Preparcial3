@@ -1,15 +1,13 @@
-import { TaskType } from "../types/TypesDB";
+import { store } from "../flux/Store";
+import { AppDispatcher } from "../flux/Dispatcher";
 import {
-  getTasksByUserId,
-  addTask,
-  updateTask,
-  deleteTask,
-} from "../services/firebase/TaskService";
-import { logoutUser } from "../services/firebase/auth-service";
+  TaskActionsType,
+  AuthActionsType,
+  NavigationActionsType,
+} from "../flux/Actions";
+import { Task } from "../types";
 
 class TasksPage extends HTMLElement {
-  private tasks: TaskType[] = [];
-
   constructor() {
     super();
     this.attachShadow({ mode: "open" });
@@ -18,7 +16,55 @@ class TasksPage extends HTMLElement {
   connectedCallback() {
     this.render();
     this.setupListeners();
-    this.loadTasks();
+    store.subscribe(this.handleStateChange.bind(this));
+    AppDispatcher.dispatch({ type: TaskActionsType.FETCH_TASKS });
+  }
+
+  disconnectedCallback() {
+    store.unsubscribe(this.handleStateChange.bind(this));
+  }
+
+  handleStateChange(state: any) {
+    const tasksContainer = this.shadowRoot?.querySelector(".tasks-list");
+    if (!tasksContainer) return;
+
+    if (state.loading) {
+      tasksContainer.innerHTML = `
+        <div class="loading-state">
+          <p>Cargando tareas...</p>
+        </div>
+      `;
+      return;
+    }
+
+    if (state.error) {
+      tasksContainer.innerHTML = `
+        <div class="error-state">
+          <p>${state.error}</p>
+        </div>
+      `;
+      return;
+    }
+
+    if (state.tasks.length === 0) {
+      tasksContainer.innerHTML = `
+        <div class="empty-state">
+          <h3>No hay tareas todavía</h3>
+          <p>Comienza añadiendo tu primera tarea con el botón "Añadir tarea"</p>
+        </div>
+      `;
+      return;
+    }
+
+    tasksContainer.innerHTML = "";
+    state.tasks.forEach((task: Task) => {
+      const taskCard = document.createElement("task-card");
+      taskCard.setAttribute("id", task.id);
+      taskCard.setAttribute("title", task.title);
+      taskCard.setAttribute("description", task.description);
+      taskCard.setAttribute("status", task.status);
+      tasksContainer.appendChild(taskCard);
+    });
   }
 
   setupListeners() {
@@ -28,17 +74,12 @@ class TasksPage extends HTMLElement {
     });
 
     const logoutBtn = this.shadowRoot?.querySelector("#logout-btn");
-    logoutBtn?.addEventListener("click", async () => {
-      await logoutUser();
-
-      // Redirigir al inicio
-      window.history.pushState({}, "", "/");
-      const event = new CustomEvent("route-change", {
-        bubbles: true,
-        composed: true,
-        detail: { path: "/" },
+    logoutBtn?.addEventListener("click", () => {
+      AppDispatcher.dispatch({ type: AuthActionsType.LOGOUT });
+      AppDispatcher.dispatch({
+        type: NavigationActionsType.NAVIGATE,
+        payload: { path: "/" },
       });
-      this.dispatchEvent(event);
     });
   }
 

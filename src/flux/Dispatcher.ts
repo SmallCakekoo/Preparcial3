@@ -1,38 +1,49 @@
 import { UserCredential } from "firebase/auth";
+import { UserProfile, Post } from "../types";
+import { Action as ActionType } from "./Actions";
 
 export type PathPayload = {
-    path: string;
+  path: string;
 };
 
+export type PostPayload = {
+  content?: string;
+  postId?: string;
+  posts?: Post[];
+};
+
+export type UserPayload = {
+  email?: string;
+  password?: string;
+  displayName?: string;
+  user?: UserCredential;
+  profile?: UserProfile;
+  error?: string;
+};
+
+export type ActionPayload =
+  | PathPayload
+  | PostPayload
+  | UserPayload
+  | string
+  | Post[]
+  | UserCredential;
+
 export interface Action {
-    type: string;
-    payload?: PathPayload | UserCredential;
+  type: string;
+  payload?: ActionPayload;
 }
 
-export class Dispatcher {
-    // Los metodos de cada store que accionan las handleActions
-    private _listeners: Array<(action: Action) => void>;
+class Dispatcher {
+  private _callbacks: Array<(action: ActionType) => void> = [];
 
-    constructor() {
-        this._listeners = [];
-    }
+  register(callback: (action: ActionType) => void): void {
+    this._callbacks.push(callback);
+  }
 
-    // This method is used to register a callback function that will be called
-    // whenever an action is dispatched. It allows components to listen for
-    // changes in the application state and update themselves accordingly.
-    register(callback: (action: Action) => void): void {
-        this._listeners.push(callback);
-    }
-
-    // This method is used to dispatch an action to all registered listeners.
-    // It takes an action object as an argument and calls each registered
-    // callback function with the action as an argument. This allows components
-    // to respond to actions and update their state accordingly.
-    dispatch(action: Action): void {
-        for (const listener of this._listeners) {
-            listener(action);
-        }
-    }
+  dispatch(action: ActionType): void {
+    this._callbacks.forEach((callback) => callback(action));
+  }
 }
 
 export const AppDispatcher = new Dispatcher();
