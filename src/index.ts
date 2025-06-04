@@ -1,0 +1,21 @@
+// import firebaseComponent from "./components/firebase-component";
+import RootApp from "./root/RootApp";
+import LoginForm from "./components/LoginForm";
+import TaskForm from "./components/TaskForm";
+import TaskCard from "./components/TaskCard";
+import TaskList from "./components/TaskList";
+import RegisterForm from "./components/RegisterForm";
+import MainPage from "./pages/MainPage";
+import FourPage from "./pages/FourPage";
+import TasksPage from "./pages/TasksPage";
+
+// customElements.define("firebase-component", firebaseComponent);
+customElements.define("root-app", RootApp);
+customElements.define("login-form", LoginForm);
+customElements.define("task-form", TaskForm);
+customElements.define("task-card", TaskCard);
+customElements.define("task-list", TaskList);
+customElements.define("register-form", RegisterForm);
+customElements.define("main-page", MainPage);
+customElements.define("four-page", FourPage);
+customElements.define("tasks-page", TasksPage);
