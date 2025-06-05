@@ -17,10 +17,14 @@ class RootApp extends HTMLElement {
     console.log("State changed, current path:", state.currentPath);
     console.log("Window location path:", window.location.pathname);
 
-    // Solo actualizar si la ruta en el estado es diferente a la actual
-    if (state.currentPath !== window.location.pathname) {
+    // Actualizar la ruta si es diferente
+    if (state.currentPath && state.currentPath !== window.location.pathname) {
       console.log("Path mismatch, updating route");
-      this.handleRouteChange();
+      window.history.pushState({}, "", state.currentPath);
+      // Forzar la actualización de la vista
+      setTimeout(() => {
+        this.handleRouteChange();
+      }, 0);
     }
   }
 
@@ -55,6 +59,14 @@ class RootApp extends HTMLElement {
         }
       }
     });
+
+    // Suscribirse a cambios en el store
+    store.subscribe(() => {
+      const state = store.getState();
+      if (state.currentPath) {
+        this.handleRouteChange();
+      }
+    });
   }
 
   handleRouteChange() {
@@ -62,7 +74,7 @@ class RootApp extends HTMLElement {
     const path = window.location.pathname;
     console.log("Handling route change to:", path);
 
-    const content = this.shadowRoot.querySelector("#content");
+    const content = this.shadowRoot.querySelector("#content") as HTMLElement;
     if (!content) {
       console.error("Content container not found");
       return;
@@ -94,6 +106,13 @@ class RootApp extends HTMLElement {
     // Agregar el nuevo componente al DOM
     content.appendChild(newComponent);
     console.log("New component added:", newComponent.tagName);
+
+    // Forzar una actualización del DOM
+    requestAnimationFrame(() => {
+      content.style.display = "none";
+      content.offsetHeight; // Forzar reflow
+      content.style.display = "flex";
+    });
   }
 
   render() {

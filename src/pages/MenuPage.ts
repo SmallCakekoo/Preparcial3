@@ -1,7 +1,6 @@
 import { AppDispatcher } from "../flux/Dispatcher";
 import { store } from "../flux/Store";
 import { NavigateActionsType } from "../flux/Actions";
-import { AppState } from "../types/SrcTypes";
 
 class MenuPage extends HTMLElement {
   constructor() {
@@ -31,11 +30,7 @@ class MenuPage extends HTMLElement {
     store.unsubscribe(this.handleStateChange.bind(this));
   }
 
-  handleStateChange(state: AppState) {
-    // Si necesitas re-renderizar algo en MenuPage basado en el estado,
-    // puedes hacerlo aquí, pero la navegación ya no se manejará aquí.
-    // console.log("MenuPage - Estado cambiado:", state);
-  }
+  handleStateChange() {}
 
   renderInitialStructure() {
     if (!this.shadowRoot) return;
@@ -253,7 +248,6 @@ class MenuPage extends HTMLElement {
       </style>
       
       <div class="main-container">
-        <!-- El contenido se cargará dinámicamente -->
       </div>
     `;
   }
