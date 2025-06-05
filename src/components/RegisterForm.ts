@@ -1,7 +1,8 @@
 import { registerUser } from "../services/firebase/auth-service";
 import { store } from "../flux/Store";
 import { AppDispatcher } from "../flux/Dispatcher";
-import { AuthActionsType, NavigationActionsType } from "../flux/Actions";
+import { AuthActionsType } from "../flux/Actions";
+import { AppState, AuthPayload } from "../types/SrcTypes";
 
 class RegisterForm extends HTMLElement {
   constructor() {
@@ -19,7 +20,7 @@ class RegisterForm extends HTMLElement {
     store.unsubscribe(this.handleStateChange.bind(this));
   }
 
-  handleStateChange(state: any) {
+  handleStateChange(state: AppState) {
     const submitBtn = this.shadowRoot?.querySelector(
       "button[type='submit']"
     ) as HTMLButtonElement;
@@ -49,67 +50,88 @@ class RegisterForm extends HTMLElement {
       const confirmPasswordInput = this.shadowRoot?.querySelector(
         "#confirm-password"
       ) as HTMLInputElement;
+      const roleSelect = this.shadowRoot?.querySelector(
+        "#role"
+      ) as HTMLSelectElement;
 
       if (
         usernameInput &&
         emailInput &&
         passwordInput &&
-        confirmPasswordInput
+        confirmPasswordInput &&
+        roleSelect
       ) {
         const username = usernameInput.value.trim();
         const email = emailInput.value.trim();
         const password = passwordInput.value.trim();
         const confirmPassword = confirmPasswordInput.value.trim();
+        const role = roleSelect.value as "user" | "admin";
 
         if (!username || !email || !password || !confirmPassword) {
+          const payload: AuthPayload = {
+            error: "Por favor, completa todos los campos",
+          };
           AppDispatcher.dispatch({
             type: AuthActionsType.REGISTER_ERROR,
-            payload: { error: "Por favor, completa todos los campos" },
+            payload,
           });
           return;
         }
 
         if (password !== confirmPassword) {
+          const payload: AuthPayload = {
+            error: "Las contraseñas no coinciden",
+          };
           AppDispatcher.dispatch({
             type: AuthActionsType.REGISTER_ERROR,
-            payload: { error: "Las contraseñas no coinciden" },
+            payload,
           });
           return;
         }
 
         if (password.length < 6) {
+          const payload: AuthPayload = {
+            error: "La contraseña debe tener al menos 6 caracteres",
+          };
           AppDispatcher.dispatch({
             type: AuthActionsType.REGISTER_ERROR,
-            payload: {
-              error: "La contraseña debe tener al menos 6 caracteres",
-            },
+            payload,
           });
           return;
         }
 
-        AppDispatcher.dispatch({ type: AuthActionsType.REGISTER_START });
+        const startPayload: AuthPayload = { loading: true };
+        AppDispatcher.dispatch({
+          type: AuthActionsType.REGISTER_START,
+          payload: startPayload,
+        });
 
-        const result = await registerUser(email, password, username);
+        const result = await registerUser(email, password, username, role);
 
-        if (result.success) {
+        if (result.success && result.user) {
+          const successPayload: AuthPayload = {
+            user: result.user,
+            displayName: username,
+            role: role,
+          };
           AppDispatcher.dispatch({
             type: AuthActionsType.REGISTER_SUCCESS,
-            payload: {
-              user: result.user,
-              displayName: username,
-            },
+            payload: successPayload,
           });
 
-          AppDispatcher.dispatch({
-            type: NavigationActionsType.NAVIGATE,
-            payload: { path: "/tasks" },
-          });
+          window.dispatchEvent(
+            new CustomEvent("navigate", {
+              detail: { path: "/post" },
+            })
+          );
         } else {
+          const errorPayload: AuthPayload = {
+            error: "Error al registrar. El correo podría estar en uso.",
+            loading: false,
+          };
           AppDispatcher.dispatch({
             type: AuthActionsType.REGISTER_ERROR,
-            payload: {
-              error: "Error al registrar. El correo podría estar en uso.",
-            },
+            payload: errorPayload,
           });
         }
       }
@@ -118,10 +140,11 @@ class RegisterForm extends HTMLElement {
     const loginLink = this.shadowRoot?.querySelector(".login-link");
     loginLink?.addEventListener("click", (e) => {
       e.preventDefault();
-      AppDispatcher.dispatch({
-        type: NavigationActionsType.NAVIGATE,
-        payload: { path: "/login" },
-      });
+      window.dispatchEvent(
+        new CustomEvent("navigate", {
+          detail: { path: "/login" },
+        })
+      );
     });
   }
 
@@ -174,7 +197,7 @@ class RegisterForm extends HTMLElement {
           color: var(--text-color);
         }
         
-        input {
+        input, select {
           width: 100%;
           padding: 12px 15px;
           border: 2px solid var(--border-color);
@@ -183,9 +206,10 @@ class RegisterForm extends HTMLElement {
           font-size: 14px;
           transition: all 0.3s ease;
           box-sizing: border-box;
+          background-color: white;
         }
         
-        input:focus {
+        input:focus, select:focus {
           outline: none;
           border-color: var(--primary-color);
           box-shadow: 0 0 0 3px rgba(67, 97, 238, 0.15);
@@ -273,6 +297,14 @@ class RegisterForm extends HTMLElement {
           <div class="form-group">
             <label for="confirm-password">Confirmar contraseña</label>
             <input type="password" id="confirm-password" required placeholder="Repite tu contraseña">
+          </div>
+          
+          <div class="form-group">
+            <label for="role">Tipo de cuenta</label>
+            <select id="role" required>
+              <option value="user">Usuario</option>
+              <option value="admin">Administrador</option>
+            </select>
           </div>
           
           <button type="submit">Registrarse</button>

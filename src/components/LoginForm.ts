@@ -1,7 +1,8 @@
 import { loginUser } from "../services/firebase/auth-service";
 import { store } from "../flux/Store";
 import { AppDispatcher } from "../flux/Dispatcher";
-import { AuthActionsType, NavigationActionsType } from "../flux/Actions";
+import { AuthActionsType } from "../flux/Actions";
+import { AppState, AuthPayload } from "../types/SrcTypes";
 
 class LoginForm extends HTMLElement {
   constructor() {
@@ -19,7 +20,7 @@ class LoginForm extends HTMLElement {
     store.unsubscribe(this.handleStateChange.bind(this));
   }
 
-  handleStateChange(state: any) {
+  handleStateChange(state: AppState) {
     const submitBtn = this.shadowRoot?.querySelector(
       "button[type='submit']"
     ) as HTMLButtonElement;
@@ -51,33 +52,47 @@ class LoginForm extends HTMLElement {
         const password = passwordInput.value.trim();
 
         if (!email || !password) {
+          const payload: AuthPayload = {
+            error: "Por favor, completa todos los campos",
+          };
           AppDispatcher.dispatch({
             type: AuthActionsType.LOGIN_ERROR,
-            payload: { error: "Por favor, completa todos los campos" },
+            payload,
           });
           return;
         }
 
-        AppDispatcher.dispatch({ type: AuthActionsType.LOGIN_START });
+        const startPayload: AuthPayload = { loading: true };
+        AppDispatcher.dispatch({
+          type: AuthActionsType.LOGIN_START,
+          payload: startPayload,
+        });
 
         const result = await loginUser(email, password);
 
-        if (result.success) {
+        if (result.success && result.user) {
+          const successPayload: AuthPayload = {
+            user: result.user,
+            displayName: result.user.displayName || "",
+          };
           AppDispatcher.dispatch({
-            type: AuthActionsType.LOGIN_SUCCESS,
-            payload: { user: result.user },
+            type: AuthActionsType.LOGIN,
+            payload: successPayload,
           });
 
-          AppDispatcher.dispatch({
-            type: NavigationActionsType.NAVIGATE,
-            payload: { path: "/tasks" },
-          });
+          window.dispatchEvent(
+            new CustomEvent("navigate", {
+              detail: { path: "/post" },
+            })
+          );
         } else {
+          const errorPayload: AuthPayload = {
+            error: "Error al iniciar sesión. Verifica tus credenciales.",
+            loading: false,
+          };
           AppDispatcher.dispatch({
             type: AuthActionsType.LOGIN_ERROR,
-            payload: {
-              error: "Error al iniciar sesión. Verifica tus credenciales.",
-            },
+            payload: errorPayload,
           });
         }
       }
@@ -86,10 +101,11 @@ class LoginForm extends HTMLElement {
     const registerLink = this.shadowRoot?.querySelector(".register-link");
     registerLink?.addEventListener("click", (e) => {
       e.preventDefault();
-      AppDispatcher.dispatch({
-        type: NavigationActionsType.NAVIGATE,
-        payload: { path: "/register" },
-      });
+      window.dispatchEvent(
+        new CustomEvent("navigate", {
+          detail: { path: "/register" },
+        })
+      );
     });
   }
 

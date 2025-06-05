@@ -1,3 +1,5 @@
+import { store } from "../flux/Store";
+
 class RootApp extends HTMLElement {
   constructor() {
     super();
@@ -7,18 +9,23 @@ class RootApp extends HTMLElement {
   connectedCallback() {
     this.render();
     this.setupRouting();
+    store.subscribe(this.handleStateChange.bind(this));
+  }
 
-    this.addEventListener("route-change", ((e: CustomEvent) => {
-      if (e.detail && e.detail.path) {
-        window.history.pushState({}, "", e.detail.path);
-        this.handleRouteChange();
-      }
-    }) as EventListener);
+  handleStateChange() {
+    this.handleRouteChange();
   }
 
   setupRouting() {
     this.handleRouteChange();
     window.addEventListener("popstate", () => this.handleRouteChange());
+
+    // Escuchar eventos de navegación personalizados
+    window.addEventListener("navigate", ((event: CustomEvent) => {
+      const path = event.detail.path;
+      window.history.pushState({}, "", path);
+      this.handleRouteChange();
+    }) as EventListener);
 
     this.shadowRoot?.addEventListener("click", (e) => {
       const target = e.target as HTMLElement;
@@ -43,23 +50,19 @@ class RootApp extends HTMLElement {
 
     switch (path) {
       case "/":
-        content.innerHTML = `
-        <main-page></main-page>
-        `;
+        content.innerHTML = `<menu-page></menu-page>`;
         break;
       case "/login":
         content.innerHTML = `<login-form></login-form>`;
         break;
       case "/register":
-        content.innerHTML = `<register-form mode="register"></register-form>`;
+        content.innerHTML = `<register-form></register-form>`;
         break;
-      case "/tasks":
-        content.innerHTML = `<tasks-page></tasks-page>`;
+      case "/post":
+        content.innerHTML = `<post-page></post-page>`;
         break;
       default:
-        content.innerHTML = `
-        <four-page></four-page>  
-        `;
+        content.innerHTML = `<four-page></four-page>`;
         break;
     }
   }
@@ -107,13 +110,17 @@ class RootApp extends HTMLElement {
         
         #content {
           padding: 20px;
+          min-height: calc(100vh - 40px);
+          display: flex;
+          flex-direction: column;
         }
       </style>
       
       <div class="app-container">
         <div class="main-content">
-          <main id="content">
-          </main>
+          <div id="content">
+            <menu-page></menu-page>
+          </div>
         </div>
       </div>
     `;

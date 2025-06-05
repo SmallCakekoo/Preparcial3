@@ -1,6 +1,3 @@
-import { AppDispatcher } from "../flux/Dispatcher";
-import { NavigationActionsType } from "../flux/Actions";
-
 class FourPage extends HTMLElement {
   constructor() {
     super();
@@ -88,13 +85,6 @@ class FourPage extends HTMLElement {
         </div>
       `;
 
-    const homeBtn = this.shadowRoot.querySelector("#home-btn");
-    homeBtn?.addEventListener("click", () => {
-      AppDispatcher.dispatch({
-        type: NavigationActionsType.NAVIGATE,
-        payload: { path: "/" },
-      });
-    });
   }
 }
 

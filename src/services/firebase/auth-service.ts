@@ -4,15 +4,17 @@ import {
   signOut,
   onAuthStateChanged,
   User,
+  deleteUser,
 } from "firebase/auth";
 import { auth, db } from "./firebase-config";
-import { doc, setDoc, getDoc } from "firebase/firestore";
+import { doc, setDoc, getDoc, deleteDoc } from "firebase/firestore";
 
 // Función para registrar un nuevo usuario
 export const registerUser = async (
   email: string,
   password: string,
-  username: string
+  username: string,
+  role: string
 ) => {
   try {
     // Crear usuario en Firebase Auth
@@ -27,6 +29,7 @@ export const registerUser = async (
     await setDoc(doc(db, "users", user.uid), {
       username,
       email,
+      role,
       createdAt: new Date(),
     });
 
@@ -34,6 +37,7 @@ export const registerUser = async (
     localStorage.setItem("userId", user.uid);
     localStorage.setItem("userEmail", email);
     localStorage.setItem("username", username);
+    localStorage.setItem("userRole", role);
 
     return { success: true, user };
   } catch (error) {
@@ -90,4 +94,47 @@ export const logoutUser = async () => {
 // Función para verificar el estado de autenticación
 export const checkAuthState = (callback: (user: User | null) => void) => {
   return onAuthStateChanged(auth, callback);
+};
+
+// Función para eliminar el usuario de Firestore
+export const deleteUserFromFirestore = async (userId: string) => {
+  try {
+    await deleteDoc(doc(db, "users", userId));
+    return { success: true };
+  } catch (error) {
+    console.error("Error al eliminar usuario de Firestore:", error);
+    return { success: false, error };
+  }
+};
+
+// Función para eliminar la cuenta del usuario
+export const deleteUserAccount = async () => {
+  try {
+    const user = auth.currentUser;
+    if (!user) {
+      throw new Error("No hay usuario autenticado");
+    }
+
+    // Primero eliminamos el documento de Firestore
+    const deleteFirestoreResult = await deleteUserFromFirestore(user.uid);
+    if (!deleteFirestoreResult.success) {
+      throw new Error(
+        "Error al eliminar datos del usuario de la base de datos"
+      );
+    }
+
+    // Luego eliminamos la cuenta de autenticación
+    await deleteUser(user);
+
+    // Limpiamos localStorage
+    localStorage.removeItem("userId");
+    localStorage.removeItem("userEmail");
+    localStorage.removeItem("username");
+    localStorage.removeItem("userRole");
+
+    return { success: true };
+  } catch (error) {
+    console.error("Error al eliminar la cuenta:", error);
+    return { success: false, error };
+  }
 };

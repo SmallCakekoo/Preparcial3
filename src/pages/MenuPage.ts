@@ -1,8 +1,9 @@
-import { store } from "../flux/Store";
 import { AppDispatcher } from "../flux/Dispatcher";
-import { AuthActionsType, NavigationActionsType } from "../flux/Actions";
+import { store } from "../flux/Store";
+import { NavigateActionsType } from "../flux/Actions";
+import { AppState } from "../types/SrcTypes";
 
-class MainPage extends HTMLElement {
+class MenuPage extends HTMLElement {
   constructor() {
     super();
     this.attachShadow({ mode: "open" });
@@ -10,22 +11,20 @@ class MainPage extends HTMLElement {
 
   connectedCallback() {
     this.renderInitialStructure();
+    this.renderAuthOptions();
     store.subscribe(this.handleStateChange.bind(this));
-    AppDispatcher.dispatch({ type: AuthActionsType.CHECK_AUTH });
   }
 
   disconnectedCallback() {
     store.unsubscribe(this.handleStateChange.bind(this));
   }
 
-  handleStateChange(state: any) {
+  handleStateChange(state: AppState) {
     if (state.isAuthenticated) {
       AppDispatcher.dispatch({
-        type: NavigationActionsType.NAVIGATE,
-        payload: { path: "/tasks" },
+        type: NavigateActionsType.NAVIGATE,
+        payload: { path: "/post" },
       });
-    } else {
-      this.renderAuthOptions();
     }
   }
 
@@ -269,19 +268,21 @@ class MainPage extends HTMLElement {
     const registerBtn = mainContainer.querySelector("#register-btn");
 
     loginBtn?.addEventListener("click", () => {
+      window.history.pushState({}, "", "/login");
       AppDispatcher.dispatch({
-        type: NavigationActionsType.NAVIGATE,
+        type: NavigateActionsType.NAVIGATE,
         payload: { path: "/login" },
       });
     });
 
     registerBtn?.addEventListener("click", () => {
+      window.history.pushState({}, "", "/register");
       AppDispatcher.dispatch({
-        type: NavigationActionsType.NAVIGATE,
+        type: NavigateActionsType.NAVIGATE,
         payload: { path: "/register" },
       });
     });
   }
 }
 
-customElements.define("main-page", MainPage);
+export default MenuPage;
