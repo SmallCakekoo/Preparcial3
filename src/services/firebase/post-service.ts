@@ -8,8 +8,14 @@ import {
   query,
   orderBy,
   Timestamp,
+  getDoc,
 } from "firebase/firestore";
 import { Post } from "../../types/SrcTypes";
+
+interface UserData {
+  displayName?: string;
+  username?: string;
+}
 
 export const createPost = async (
   content: string,
@@ -17,25 +23,38 @@ export const createPost = async (
   imageUrl?: string
 ): Promise<Post> => {
   try {
+    console.log("Iniciando creación de post con datos:", {
+      content,
+      userId,
+      imageUrl,
+    });
+
+    // Obtener información del usuario
+    const userDocRef = doc(db, "users", userId);
+    const userDoc = await getDoc(userDocRef);
+    const userData = userDoc.data() as UserData;
+    console.log("Datos del usuario encontrados:", userData);
+
+    if (!userData) {
+      throw new Error("Usuario no encontrado");
+    }
+
     const postData = {
       content,
       userId,
       imageUrl: imageUrl || "",
       createdAt: Timestamp.now(),
-      updatedAt: Timestamp.now(),
-      authorName: "", // Se actualizará con el nombre del usuario
-      authorId: userId,
-      likes: 0,
-      comments: [],
+      authorName: userData.displayName || userData.username || "Anónimo",
     };
 
-    const docRef = await addDoc(collection(db, "posts"), postData);
+    console.log("Datos del post a guardar:", postData);
+    const docRef = await addDoc(collection(db, "post"), postData);
+    console.log("Post creado con ID:", docRef.id);
 
     return {
       id: docRef.id,
       ...postData,
       createdAt: postData.createdAt.toDate(),
-      updatedAt: postData.updatedAt.toDate(),
     };
   } catch (error) {
     console.error("Error al crear el post:", error);
@@ -45,15 +64,34 @@ export const createPost = async (
 
 export const getPosts = async (): Promise<Post[]> => {
   try {
-    const q = query(collection(db, "posts"), orderBy("createdAt", "desc"));
+    console.log("Obteniendo posts de Firestore...");
+    const q = query(collection(db, "post"), orderBy("createdAt", "desc"));
     const querySnapshot = await getDocs(q);
+    console.log("Posts obtenidos:", querySnapshot.size);
 
-    return querySnapshot.docs.map((doc) => ({
-      id: doc.id,
-      ...doc.data(),
-      createdAt: doc.data().createdAt.toDate(),
-      updatedAt: doc.data().updatedAt.toDate(),
-    })) as Post[];
+    const posts = await Promise.all(
+      querySnapshot.docs.map(async (docSnapshot) => {
+        const data = docSnapshot.data();
+        // Obtener el nombre del usuario para cada post
+        const userDocRef = doc(db, "users", data.userId);
+        const userDoc = await getDoc(userDocRef);
+        const userData = userDoc.data() as UserData;
+
+        const post: Post = {
+          id: docSnapshot.id,
+          content: data.content,
+          userId: data.userId,
+          imageUrl: data.imageUrl,
+          authorName: userData?.displayName || userData?.username || "Anónimo",
+          createdAt: data.createdAt.toDate(),
+        };
+
+        return post;
+      })
+    );
+
+    console.log("Posts procesados:", posts);
+    return posts;
   } catch (error) {
     console.error("Error al obtener los posts:", error);
     throw error;
@@ -62,7 +100,9 @@ export const getPosts = async (): Promise<Post[]> => {
 
 export const deletePost = async (postId: string): Promise<void> => {
   try {
-    await deleteDoc(doc(db, "posts", postId));
+    console.log("Intentando eliminar post con ID:", postId);
+    await deleteDoc(doc(db, "post", postId));
+    console.log("Post eliminado exitosamente");
   } catch (error) {
     console.error("Error al eliminar el post:", error);
     throw error;

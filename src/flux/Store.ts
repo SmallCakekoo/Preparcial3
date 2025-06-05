@@ -1,7 +1,6 @@
 import { AppDispatcher } from "./Dispatcher";
 import {
   AppState,
-  Post,
   PostPayload,
   PathPayload,
   ActionPayload,
@@ -15,7 +14,13 @@ import {
   NavigateActionsType,
   AuthActionsType,
 } from "./Actions";
-import { UserCredential, User as FirebaseUser } from "firebase/auth";
+import {
+  UserCredential,
+  User as FirebaseUser,
+  onAuthStateChanged,
+} from "firebase/auth";
+import { createPost, getPosts } from "../services/firebase/post-service";
+import { auth } from "../services/firebase/firebase-config";
 
 class Store {
   private state: AppState = {
@@ -36,6 +41,52 @@ class Store {
 
   constructor() {
     AppDispatcher.register(this.handleAction.bind(this));
+    // Cargar posts iniciales
+    this.loadInitialPosts();
+    // Verificar estado de autenticación
+    this.checkAuthState();
+  }
+
+  private checkAuthState() {
+    onAuthStateChanged(auth, (user) => {
+      console.log("Estado de autenticación cambiado:", user);
+      if (user) {
+        const userData: User = {
+          uid: user.uid,
+          displayName: user.displayName,
+          email: user.email,
+          photoURL: user.photoURL,
+          role: "user",
+        };
+        this.state = {
+          ...this.state,
+          isAuthenticated: true,
+          currentUser: userData,
+          error: null,
+        };
+      } else {
+        this.state = {
+          ...this.state,
+          isAuthenticated: false,
+          currentUser: null,
+          error: null,
+        };
+      }
+      this.notifyListeners();
+    });
+  }
+
+  private async loadInitialPosts() {
+    try {
+      const posts = await getPosts();
+      this.state = {
+        ...this.state,
+        posts,
+      };
+      this.notifyListeners();
+    } catch (error) {
+      console.error("Error al cargar posts iniciales:", error);
+    }
   }
 
   private convertToUser(userCredential: UserCredential | FirebaseUser): User {
@@ -50,7 +101,8 @@ class Store {
     };
   }
 
-  private handleAction(action: Action) {
+  private async handleAction(action: Action) {
+    console.log("Store - Acción recibida:", action);
     const payload = action.payload as ActionPayload;
 
     switch (action.type) {
@@ -143,24 +195,36 @@ class Store {
         break;
 
       case PostActionsType.CREATE_POST:
+        console.log("Store - Procesando CREATE_POST");
         if (payload && "content" in payload) {
           const postPayload = payload as PostPayload;
-          if (postPayload.content) {
-            const newPost: Post = {
-              id: crypto.randomUUID(),
-              content: postPayload.content,
-              userId: this.state.currentUser?.uid || "anonymous",
-              authorName: this.state.currentUser?.displayName || "Anónimo",
-              authorId: this.state.currentUser?.uid || "anonymous",
-              createdAt: new Date(),
-              updatedAt: new Date(),
-              likes: 0,
-              comments: [],
-            };
-            this.state = {
-              ...this.state,
-              posts: [newPost, ...this.state.posts],
-            };
+          console.log("Store - Payload del post:", postPayload);
+          if (postPayload.content && this.state.currentUser) {
+            try {
+              console.log("Store - Creando post en Firebase...");
+              const newPost = await createPost(
+                postPayload.content,
+                this.state.currentUser.uid,
+                postPayload.imageUrl
+              );
+              console.log("Store - Post creado exitosamente:", newPost);
+
+              this.state = {
+                ...this.state,
+                posts: [newPost, ...this.state.posts],
+              };
+            } catch (error) {
+              console.error("Store - Error al crear post en Firebase:", error);
+              this.state = {
+                ...this.state,
+                error: "Error al crear el post",
+              };
+            }
+          } else {
+            console.log("Store - No se puede crear el post:", {
+              tieneContenido: !!postPayload.content,
+              tieneUsuario: !!this.state.currentUser,
+            });
           }
         }
         break;

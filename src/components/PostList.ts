@@ -1,6 +1,6 @@
 import { store } from "../flux/Store";
 import { Post, AppState } from "../types/SrcTypes";
-import { getPosts } from "../services/firebase/post-service";
+import { PostActions } from "../flux/Actions";
 
 class PostList extends HTMLElement {
   private posts: Post[] = [];
@@ -11,22 +11,17 @@ class PostList extends HTMLElement {
   }
 
   connectedCallback() {
-    this.loadPosts();
+    // Cargar los posts del estado actual
+    const state = store.getState();
+    this.posts = state.posts;
+    this.render();
+
+    // Suscribirse a los cambios del estado
     store.subscribe(this.handleStateChange.bind(this));
   }
 
   disconnectedCallback() {
     store.unsubscribe(this.handleStateChange.bind(this));
-  }
-
-  async loadPosts() {
-    try {
-      const posts = await getPosts();
-      this.posts = posts;
-      this.render();
-    } catch (error) {
-      console.error("Error al cargar los posts:", error);
-    }
   }
 
   handleStateChange(state: AppState) {
@@ -41,20 +36,74 @@ class PostList extends HTMLElement {
 
     this.shadowRoot.innerHTML = `
       <style>
+        @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&display=swap');
+        
+        :host {
+          display: block;
+          font-family: 'Montserrat', sans-serif;
+          --primary-color: #4361ee;
+          --primary-hover: #3a56d4;
+          --primary-light: #eef2ff;
+          --secondary-color: #3f3d56;
+          --secondary-hover: #33313f;
+          --accent-color: #f72585;
+          --text-color: #2b2d42;
+          --text-secondary: #64748b;
+          --border-color: #e0e0e0;
+          --background-color: #f9f9f9;
+          --card-bg: #ffffff;
+          --shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+          --border-radius: 12px;
+        }
+        
         .post-list {
           display: flex;
           flex-direction: column;
-          gap: 20px;
+          gap: 25px;
           padding: 20px;
+          max-width: 800px;
+          margin: 0 auto;
         }
         
         .empty-state {
           text-align: center;
-          color: #666;
           padding: 40px;
-          background: white;
-          border-radius: 8px;
-          box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+          background: var(--card-bg);
+          border-radius: var(--border-radius);
+          box-shadow: var(--shadow);
+          border: 1px solid var(--border-color);
+        }
+        
+        .empty-state h3 {
+          color: var(--primary-color);
+          font-size: 1.8rem;
+          margin-bottom: 15px;
+          font-weight: 600;
+        }
+        
+        .empty-state p {
+          color: var(--text-secondary);
+          font-size: 1.1rem;
+          line-height: 1.6;
+        }
+        
+        @media (max-width: 768px) {
+          .post-list {
+            padding: 15px;
+            gap: 20px;
+          }
+          
+          .empty-state {
+            padding: 30px 20px;
+          }
+          
+          .empty-state h3 {
+            font-size: 1.5rem;
+          }
+          
+          .empty-state p {
+            font-size: 1rem;
+          }
         }
       </style>
       

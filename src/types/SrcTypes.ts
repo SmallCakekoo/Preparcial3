@@ -6,12 +6,8 @@ export interface Post {
   id: string;
   content: string;
   authorName: string;
-  authorId: string;
   createdAt: Date;
-  likes: number;
-  comments: Comment[];
   userId: string;
-  updatedAt: Date;
   imageUrl?: string;
 }
 
@@ -62,6 +58,7 @@ export interface PostPayload {
   postId?: string;
   posts?: Post[];
   error?: string;
+  imageUrl?: string;
 }
 
 export interface TaskPayload {

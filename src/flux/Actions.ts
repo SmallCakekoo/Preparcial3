@@ -41,8 +41,8 @@ export enum PostActionsType {
 }
 
 export const PostActions = {
-  createPost: (content: string) => {
-    const payload: PostPayload = { content };
+  createPost: (content: string, imageUrl?: string) => {
+    const payload: PostPayload = { content, imageUrl };
     AppDispatcher.dispatch({
       type: PostActionsType.CREATE_POST,
       payload,

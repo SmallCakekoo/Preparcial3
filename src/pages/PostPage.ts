@@ -72,6 +72,26 @@ class PostPage extends HTMLElement {
 
     this.shadowRoot.innerHTML = `
       <style>
+        @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&display=swap');
+        
+        :host {
+          display: block;
+          font-family: 'Montserrat', sans-serif;
+          --primary-color: #4361ee;
+          --primary-hover: #3a56d4;
+          --primary-light: #eef2ff;
+          --secondary-color: #3f3d56;
+          --secondary-hover: #33313f;
+          --accent-color: #f72585;
+          --text-color: #2b2d42;
+          --text-secondary: #64748b;
+          --border-color: #e0e0e0;
+          --background-color: #f9f9f9;
+          --card-bg: #ffffff;
+          --shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+          --border-radius: 12px;
+        }
+        
         .post-page {
           max-width: 800px;
           margin: 0 auto;
@@ -79,44 +99,69 @@ class PostPage extends HTMLElement {
         }
         
         h1 {
-          color: #333;
+          color: var(--text-color);
           margin-bottom: 20px;
+          font-weight: 600;
         }
 
         .error-message {
-          color: #dc3545;
+          color: var(--accent-color);
           margin: 10px 0;
           text-align: center;
         }
 
         .user-actions {
           display: flex;
-          gap: 10px;
+          gap: 15px;
           margin-bottom: 20px;
           justify-content: flex-end;
         }
 
         .btn {
-          padding: 8px 16px;
+          padding: 10px 20px;
           border: none;
-          border-radius: 4px;
+          border-radius: 6px;
           cursor: pointer;
           font-weight: 500;
-          transition: background-color 0.3s;
+          font-size: 0.9rem;
+          transition: all 0.2s ease;
+          font-family: inherit;
         }
 
         .btn-logout {
-          background-color: #6c757d;
+          background: var(--secondary-color);
           color: white;
+        }
+
+        .btn-logout:hover {
+          background: var(--secondary-hover);
+          transform: translateY(-1px);
         }
 
         .btn-delete {
-          background-color: #dc3545;
+          background: var(--accent-color);
           color: white;
         }
 
-        .btn:hover {
-          opacity: 0.9;
+        .btn-delete:hover {
+          background: #e01e6f;
+          transform: translateY(-1px);
+        }
+
+        .btn:active {
+          transform: translateY(0);
+        }
+        
+        @media (max-width: 768px) {
+          .user-actions {
+            flex-direction: column;
+            align-items: stretch;
+          }
+          
+          .btn {
+            width: 100%;
+            text-align: center;
+          }
         }
       </style>
       
