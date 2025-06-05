@@ -13,6 +13,18 @@ class MenuPage extends HTMLElement {
     this.renderInitialStructure();
     this.renderAuthOptions();
     store.subscribe(this.handleStateChange.bind(this));
+
+    // Solo navegar si estamos en la ruta raíz y el usuario está autenticado
+    const state = store.getState();
+    if (state.isAuthenticated && window.location.pathname === "/") {
+      console.log(
+        "MenuPage - Usuario autenticado en ruta raíz, navegando a /post"
+      );
+      AppDispatcher.dispatch({
+        type: NavigateActionsType.NAVIGATE,
+        payload: { path: "/post" },
+      });
+    }
   }
 
   disconnectedCallback() {
@@ -20,12 +32,9 @@ class MenuPage extends HTMLElement {
   }
 
   handleStateChange(state: AppState) {
-    if (state.isAuthenticated) {
-      AppDispatcher.dispatch({
-        type: NavigateActionsType.NAVIGATE,
-        payload: { path: "/post" },
-      });
-    }
+    // Si necesitas re-renderizar algo en MenuPage basado en el estado,
+    // puedes hacerlo aquí, pero la navegación ya no se manejará aquí.
+    // console.log("MenuPage - Estado cambiado:", state);
   }
 
   renderInitialStructure() {

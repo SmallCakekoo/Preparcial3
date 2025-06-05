@@ -22,7 +22,11 @@ class PostForm extends HTMLElement {
 
   handleStateChange(state: AppState) {
     console.log("PostForm - Estado actualizado:", state);
-    this.render(); // Re-renderizar cuando cambie el estado
+    // Solo re-renderizar si cambia el estado de autenticación
+    const currentState = store.getState();
+    if (currentState.isAuthenticated !== state.isAuthenticated) {
+      this.render();
+    }
   }
 
   setupListeners() {

@@ -13,26 +13,43 @@ class RootApp extends HTMLElement {
   }
 
   handleStateChange() {
-    this.handleRouteChange();
+    const state = store.getState();
+    console.log("State changed, current path:", state.currentPath);
+    console.log("Window location path:", window.location.pathname);
+
+    // Solo actualizar si la ruta en el estado es diferente a la actual
+    if (state.currentPath !== window.location.pathname) {
+      console.log("Path mismatch, updating route");
+      this.handleRouteChange();
+    }
   }
 
   setupRouting() {
+    // Manejar la ruta inicial
     this.handleRouteChange();
-    window.addEventListener("popstate", () => this.handleRouteChange());
+
+    // Escuchar cambios en el historial del navegador
+    window.addEventListener("popstate", () => {
+      console.log("PopState event triggered");
+      this.handleRouteChange();
+    });
 
     // Escuchar eventos de navegación personalizados
     window.addEventListener("navigate", ((event: CustomEvent) => {
+      console.log("Navigate event triggered:", event.detail);
       const path = event.detail.path;
       window.history.pushState({}, "", path);
       this.handleRouteChange();
     }) as EventListener);
 
+    // Manejar clicks en enlaces
     this.shadowRoot?.addEventListener("click", (e) => {
       const target = e.target as HTMLElement;
       if (target.tagName === "A" && target.hasAttribute("href")) {
         e.preventDefault();
         const href = target.getAttribute("href");
         if (href) {
+          console.log("Link clicked, navigating to:", href);
           window.history.pushState({}, "", href);
           this.handleRouteChange();
         }
@@ -43,28 +60,40 @@ class RootApp extends HTMLElement {
   handleRouteChange() {
     if (!this.shadowRoot) return;
     const path = window.location.pathname;
-    console.log("Ruta actual:", path);
+    console.log("Handling route change to:", path);
+
     const content = this.shadowRoot.querySelector("#content");
-    if (!content) return;
+    if (!content) {
+      console.error("Content container not found");
+      return;
+    }
+
+    // Limpiar el contenido actual
     content.innerHTML = "";
 
+    // Crear y agregar el nuevo componente
+    let newComponent: HTMLElement;
     switch (path) {
       case "/":
-        content.innerHTML = `<menu-page></menu-page>`;
+        newComponent = document.createElement("menu-page");
         break;
       case "/login":
-        content.innerHTML = `<login-form></login-form>`;
+        newComponent = document.createElement("login-form");
         break;
       case "/register":
-        content.innerHTML = `<register-form></register-form>`;
+        newComponent = document.createElement("register-form");
         break;
       case "/post":
-        content.innerHTML = `<post-page></post-page>`;
+        newComponent = document.createElement("post-page");
         break;
       default:
-        content.innerHTML = `<four-page></four-page>`;
+        newComponent = document.createElement("four-page");
         break;
     }
+
+    // Agregar el nuevo componente al DOM
+    content.appendChild(newComponent);
+    console.log("New component added:", newComponent.tagName);
   }
 
   render() {
