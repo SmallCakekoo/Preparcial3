@@ -1,5 +1,4 @@
 import { Post } from "../types/SrcTypes";
-// import { PostActions } from "../flux/Actions";
 
 class PostCard extends HTMLElement {
   private post: Post | null = null;
@@ -13,7 +12,7 @@ class PostCard extends HTMLElement {
     return ["post"];
   }
 
-  attributeChangedCallback(name: string, oldValue: string, newValue: string) {
+  attributeChangedCallback(name: string, _oldValue: string, newValue: string) {
     if (name === "post" && newValue) {
       try {
         // Reemplazar las entidades HTML antes de parsear
