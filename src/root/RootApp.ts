@@ -109,7 +109,7 @@ class RootApp extends HTMLElement {
     // Forzar una actualización del DOM
     requestAnimationFrame(() => {
       content.style.display = "none";
-      void content.offsetHeight; // Forzar reflow
+      void content.offsetHeight;
       content.style.display = "flex";
     });
   }
