@@ -258,8 +258,8 @@ class MenuPage extends HTMLElement {
 
     mainContainer.innerHTML = `
       <div class="welcome-container">
-        <h1>Bienvenido a TaskMaster</h1>
-        <p>Tu aplicación de gestión de tareas personal</p>
+        <h1>Bienvenido a la mini red social</h1>
+        <p>Tu aplicación pa hablar solo</p>
         <div class="auth-buttons">
           <button id="login-btn">Iniciar Sesión</button>
           <button class="secondary-btn" id="register-btn">Registrarse</button>
@@ -271,19 +271,19 @@ class MenuPage extends HTMLElement {
     const registerBtn = mainContainer.querySelector("#register-btn");
 
     loginBtn?.addEventListener("click", () => {
-      window.history.pushState({}, "", "/login");
-      AppDispatcher.dispatch({
-        type: NavigateActionsType.NAVIGATE,
-        payload: { path: "/login" },
-      });
+      window.dispatchEvent(
+        new CustomEvent("navigate", {
+          detail: { path: "/login" },
+        })
+      );
     });
 
     registerBtn?.addEventListener("click", () => {
-      window.history.pushState({}, "", "/register");
-      AppDispatcher.dispatch({
-        type: NavigateActionsType.NAVIGATE,
-        payload: { path: "/register" },
-      });
+      window.dispatchEvent(
+        new CustomEvent("navigate", {
+          detail: { path: "/register" },
+        })
+      );
     });
   }
 }

@@ -89,9 +89,11 @@ class RootApp extends HTMLElement {
         newComponent = document.createElement("menu-page");
         break;
       case "/login":
+        console.log("Creating login form component");
         newComponent = document.createElement("login-form");
         break;
       case "/register":
+        console.log("Creating register form component");
         newComponent = document.createElement("register-form");
         break;
       case "/post":
