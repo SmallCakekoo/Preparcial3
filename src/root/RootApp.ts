@@ -99,6 +99,9 @@ class RootApp extends HTMLElement {
       case "/post":
         newComponent = document.createElement("post-page");
         break;
+      case "/admin":
+        newComponent = document.createElement("admin-page");
+        break;
       default:
         newComponent = document.createElement("four-page");
         break;

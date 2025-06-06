@@ -73,21 +73,23 @@ class LoginForm extends HTMLElement {
         if (result.success && result.user) {
           const successPayload: AuthPayload = {
             user: result.user,
-            displayName: result.user.displayName || "",
+            role: result.userData?.role,
           };
           AppDispatcher.dispatch({
-            type: AuthActionsType.LOGIN,
+            type: AuthActionsType.LOGIN_SUCCESS,
             payload: successPayload,
           });
 
+          // Redirigir según el rol
+          const path = result.isAdmin ? "/admin" : "/post";
           window.dispatchEvent(
             new CustomEvent("navigate", {
-              detail: { path: "/post" },
+              detail: { path },
             })
           );
         } else {
           const errorPayload: AuthPayload = {
-            error: "Error al iniciar sesión. Verifica tus credenciales.",
+            error: "Credenciales inválidas",
             loading: false,
           };
           AppDispatcher.dispatch({

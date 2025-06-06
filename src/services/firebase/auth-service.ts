@@ -63,11 +63,17 @@ export const loginUser = async (email: string, password: string) => {
     // Guardar información en localStorage
     localStorage.setItem("userId", user.uid);
     localStorage.setItem("userEmail", email);
-    if (userData && userData.username) {
+    if (userData) {
       localStorage.setItem("username", userData.username);
+      localStorage.setItem("userRole", userData.role);
     }
 
-    return { success: true, user, userData };
+    return {
+      success: true,
+      user,
+      userData,
+      isAdmin: userData?.role === "admin",
+    };
   } catch (error) {
     console.error("Error al iniciar sesión:", error);
     return { success: false, error };

@@ -7,6 +7,7 @@ import PostForm from "./components/PostForm";
 import RegisterForm from "./components/RegisterForm";
 import MenuPage from "./pages/MenuPage";
 import PostPage from "./pages/PostPage";
+import AdminPage from "./pages/AdminPage";
 
 // customElements.define("firebase-component", firebaseComponent);
 customElements.define("root-app", RootApp);
@@ -17,3 +18,4 @@ customElements.define("post-form", PostForm);
 customElements.define("register-form", RegisterForm);
 customElements.define("menu-page", MenuPage);
 customElements.define("post-page", PostPage);
+customElements.define("admin-page", AdminPage);

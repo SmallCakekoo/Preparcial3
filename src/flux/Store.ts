@@ -7,6 +7,7 @@ import {
   UserPayload,
   User,
   AuthPayload,
+  UserRole,
 } from "../types/SrcTypes";
 import { Action } from "./Dispatcher";
 import {
@@ -56,7 +57,7 @@ class Store {
           displayName: user.displayName,
           email: user.email,
           photoURL: user.photoURL,
-          role: "user",
+          role: (localStorage.getItem("userRole") as UserRole) || "user",
         };
         this.state = {
           ...this.state,
@@ -97,7 +98,7 @@ class Store {
       displayName: firebaseUser.displayName,
       email: firebaseUser.email,
       photoURL: firebaseUser.photoURL,
-      role: "user", // Por defecto, todos los usuarios nuevos son usuarios normales
+      role: (localStorage.getItem("userRole") as UserRole) || "user",
     };
   }
 
