@@ -5,13 +5,20 @@ import {
   getAllUsers,
   deleteUser,
   UserData,
+  updateUser,
 } from "../services/firebase/user-service";
-import { getPosts, deletePost } from "../services/firebase/post-service";
+import {
+  getPosts,
+  deletePost,
+  updatePost,
+} from "../services/firebase/post-service";
 import { Post } from "../types/SrcTypes";
 
 class AdminPage extends HTMLElement {
   private users: UserData[] = [];
   private posts: Post[] = [];
+  private editingUserId: string | null = null;
+  private editingPostId: string | null = null;
 
   constructor() {
     super();
@@ -112,6 +119,42 @@ class AdminPage extends HTMLElement {
         console.error("Error al eliminar publicación:", error);
         alert("Error al eliminar la publicación");
       }
+    }
+  }
+
+  async handleUpdateUser(userId: string, formData: FormData) {
+    try {
+      const userData = {
+        username: formData.get("username") as string,
+        email: formData.get("email") as string,
+        role: formData.get("role") as string,
+      };
+
+      await updateUser(userId, userData);
+      this.users = await getAllUsers();
+      this.editingUserId = null;
+      this.render();
+      alert("Usuario actualizado exitosamente");
+    } catch (error) {
+      console.error("Error al actualizar usuario:", error);
+      alert("Error al actualizar el usuario");
+    }
+  }
+
+  async handleUpdatePost(postId: string, formData: FormData) {
+    try {
+      const postData = {
+        content: formData.get("content") as string,
+      };
+
+      await updatePost(postId, postData);
+      this.posts = await getPosts();
+      this.editingPostId = null;
+      this.render();
+      alert("Publicación actualizada exitosamente");
+    } catch (error) {
+      console.error("Error al actualizar publicación:", error);
+      alert("Error al actualizar la publicación");
     }
   }
 
@@ -272,6 +315,71 @@ class AdminPage extends HTMLElement {
           transform: translateY(-2px);
         }
 
+        .edit-btn {
+          background: var(--primary-color);
+          color: white;
+          border: none;
+          padding: 8px 15px;
+          border-radius: 20px;
+          cursor: pointer;
+          font-size: 14px;
+          font-weight: 500;
+          transition: all 0.3s ease;
+          margin-right: 8px;
+        }
+
+        .edit-btn:hover {
+          background: var(--primary-hover);
+          transform: translateY(-2px);
+        }
+
+        .edit-form {
+          background: var(--card-bg);
+          padding: 20px;
+          border-radius: var(--border-radius);
+          margin-top: 10px;
+          box-shadow: var(--shadow);
+        }
+
+        .edit-form input,
+        .edit-form select,
+        .edit-form textarea {
+          width: 100%;
+          padding: 8px;
+          margin: 8px 0;
+          border: 1px solid var(--border-color);
+          border-radius: 4px;
+          font-size: 14px;
+        }
+
+        .edit-form textarea {
+          min-height: 100px;
+          resize: vertical;
+        }
+
+        .form-buttons {
+          display: flex;
+          gap: 10px;
+          margin-top: 10px;
+        }
+
+        .cancel-btn {
+          background: var(--secondary-color);
+          color: white;
+          border: none;
+          padding: 8px 15px;
+          border-radius: 20px;
+          cursor: pointer;
+          font-size: 14px;
+          font-weight: 500;
+          transition: all 0.3s ease;
+        }
+
+        .cancel-btn:hover {
+          background: var(--secondary-hover);
+          transform: translateY(-2px);
+        }
+
         .no-users, .no-posts {
           text-align: center;
           padding: 40px;
@@ -329,11 +437,46 @@ class AdminPage extends HTMLElement {
                     </td>
                     <td>${user.createdAt.toLocaleDateString()}</td>
                     <td>
+                      <button class="edit-btn" data-user-id="${user.uid}">
+                        Editar
+                      </button>
                       <button class="delete-btn" data-user-id="${user.uid}">
                         Eliminar
                       </button>
                     </td>
                   </tr>
+                  ${
+                    this.editingUserId === user.uid
+                      ? `
+                    <tr>
+                      <td colspan="5">
+                        <form class="edit-form" id="edit-user-form-${user.uid}">
+                          <input type="text" name="username" value="${
+                            user.username
+                          }" placeholder="Nombre de usuario" required>
+                          <input type="email" name="email" value="${
+                            user.email
+                          }" placeholder="Email" required>
+                          <select name="role" required>
+                            <option value="user" ${
+                              user.role === "user" ? "selected" : ""
+                            }>Usuario</option>
+                            <option value="admin" ${
+                              user.role === "admin" ? "selected" : ""
+                            }>Administrador</option>
+                          </select>
+                          <div class="form-buttons">
+                            <button type="submit" class="edit-btn">Guardar</button>
+                            <button type="button" class="cancel-btn" data-cancel-user="${
+                              user.uid
+                            }">Cancelar</button>
+                          </div>
+                        </form>
+                      </td>
+                    </tr>
+                  `
+                      : ""
+                  }
                 `
                   )
                   .join("")}
@@ -371,11 +514,31 @@ class AdminPage extends HTMLElement {
                     <td class="post-content">${post.content}</td>
                     <td>${post.createdAt.toLocaleDateString()}</td>
                     <td>
+                      <button class="edit-btn" data-post-id="${post.id}">
+                        Editar
+                      </button>
                       <button class="delete-btn" data-post-id="${post.id}">
                         Eliminar
                       </button>
                     </td>
                   </tr>
+                  ${
+                    this.editingPostId === post.id
+                      ? `
+                    <tr>
+                      <td colspan="4">
+                        <form class="edit-form" id="edit-post-form-${post.id}">
+                          <textarea name="content" required>${post.content}</textarea>
+                          <div class="form-buttons">
+                            <button type="submit" class="edit-btn">Guardar</button>
+                            <button type="button" class="cancel-btn" data-cancel-post="${post.id}">Cancelar</button>
+                          </div>
+                        </form>
+                      </td>
+                    </tr>
+                  `
+                      : ""
+                  }
                 `
                   )
                   .join("")}
@@ -414,6 +577,86 @@ class AdminPage extends HTMLElement {
         const postId = (e.target as HTMLElement).dataset.postId;
         if (postId) {
           this.handleDeletePost(postId);
+        }
+      });
+    });
+
+    // Agregar event listeners para los botones de editar usuarios
+    const editUserButtons = this.shadowRoot.querySelectorAll(
+      ".users-table .edit-btn"
+    );
+    editUserButtons.forEach((button) => {
+      button.addEventListener("click", (e) => {
+        const userId = (e.target as HTMLElement).dataset.userId;
+        if (userId) {
+          this.editingUserId = userId;
+          this.render();
+        }
+      });
+    });
+
+    // Agregar event listeners para los formularios de edición de usuarios
+    const editUserForms = this.shadowRoot.querySelectorAll(
+      ".users-table .edit-form"
+    );
+    editUserForms.forEach((form) => {
+      form.addEventListener("submit", (e) => {
+        e.preventDefault();
+        const userId = form.id.split("-")[3];
+        this.handleUpdateUser(userId, new FormData(form as HTMLFormElement));
+      });
+    });
+
+    // Agregar event listeners para los botones de cancelar edición de usuarios
+    const cancelUserButtons = this.shadowRoot.querySelectorAll(
+      ".users-table .cancel-btn"
+    );
+    cancelUserButtons.forEach((button) => {
+      button.addEventListener("click", (e) => {
+        const userId = (e.target as HTMLElement).dataset.cancelUser;
+        if (userId) {
+          this.editingUserId = null;
+          this.render();
+        }
+      });
+    });
+
+    // Agregar event listeners para los botones de editar posts
+    const editPostButtons = this.shadowRoot.querySelectorAll(
+      ".posts-table .edit-btn"
+    );
+    editPostButtons.forEach((button) => {
+      button.addEventListener("click", (e) => {
+        const postId = (e.target as HTMLElement).dataset.postId;
+        if (postId) {
+          this.editingPostId = postId;
+          this.render();
+        }
+      });
+    });
+
+    // Agregar event listeners para los formularios de edición de posts
+    const editPostForms = this.shadowRoot.querySelectorAll(
+      ".posts-table .edit-form"
+    );
+    editPostForms.forEach((form) => {
+      form.addEventListener("submit", (e) => {
+        e.preventDefault();
+        const postId = form.id.split("-")[3];
+        this.handleUpdatePost(postId, new FormData(form as HTMLFormElement));
+      });
+    });
+
+    // Agregar event listeners para los botones de cancelar edición de posts
+    const cancelPostButtons = this.shadowRoot.querySelectorAll(
+      ".posts-table .cancel-btn"
+    );
+    cancelPostButtons.forEach((button) => {
+      button.addEventListener("click", (e) => {
+        const postId = (e.target as HTMLElement).dataset.cancelPost;
+        if (postId) {
+          this.editingPostId = null;
+          this.render();
         }
       });
     });

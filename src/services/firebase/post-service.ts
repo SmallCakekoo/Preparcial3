@@ -9,6 +9,7 @@ import {
   orderBy,
   Timestamp,
   getDoc,
+  setDoc,
 } from "firebase/firestore";
 import { Post } from "../../types/SrcTypes";
 
@@ -105,6 +106,20 @@ export const deletePost = async (postId: string): Promise<void> => {
     console.log("Post eliminado exitosamente");
   } catch (error) {
     console.error("Error al eliminar el post:", error);
+    throw error;
+  }
+};
+
+export const updatePost = async (
+  postId: string,
+  postData: Partial<Post>
+): Promise<boolean> => {
+  try {
+    const postRef = doc(db, "post", postId);
+    await setDoc(postRef, postData, { merge: true });
+    return true;
+  } catch (error) {
+    console.error("Error al actualizar post:", error);
     throw error;
   }
 };

@@ -1,5 +1,11 @@
 import { db } from "./firebase-config";
-import { collection, getDocs, deleteDoc, doc } from "firebase/firestore";
+import {
+  collection,
+  getDocs,
+  deleteDoc,
+  doc,
+  setDoc,
+} from "firebase/firestore";
 import { auth } from "./firebase-config";
 
 export interface UserData {
@@ -72,6 +78,20 @@ export const deleteUser = async (userId: string): Promise<boolean> => {
     return true;
   } catch (error) {
     console.error("Error al eliminar usuario:", error);
+    throw error;
+  }
+};
+
+export const updateUser = async (
+  userId: string,
+  userData: Partial<UserData>
+): Promise<boolean> => {
+  try {
+    const userRef = doc(db, "users", userId);
+    await setDoc(userRef, userData, { merge: true });
+    return true;
+  } catch (error) {
+    console.error("Error al actualizar usuario:", error);
     throw error;
   }
 };
