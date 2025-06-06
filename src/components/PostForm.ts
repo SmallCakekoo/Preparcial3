@@ -1,9 +1,10 @@
 import { store } from "../flux/Store";
 import { AppState } from "../types/SrcTypes";
 import { PostActions } from "../flux/Actions";
+import { uploadMeme } from "../services/supabase/StorageService";
 
 class PostForm extends HTMLElement {
-  private selectedFile: string | null = null;
+  private selectedFile: File | null = null;
 
   constructor() {
     super();
@@ -39,6 +40,7 @@ class PostForm extends HTMLElement {
       const target = e.target as HTMLInputElement;
       if (target.files && target.files[0]) {
         const file = target.files[0];
+        this.selectedFile = file;
         const reader = new FileReader();
         reader.onload = (e) => {
           const preview = this.shadowRoot?.querySelector(
@@ -47,14 +49,13 @@ class PostForm extends HTMLElement {
           if (preview && e.target?.result) {
             preview.src = e.target.result as string;
             preview.style.display = "block";
-            this.selectedFile = e.target.result as string;
           }
         };
         reader.readAsDataURL(file);
       }
     });
 
-    form?.addEventListener("submit", (e) => {
+    form?.addEventListener("submit", async (e) => {
       e.preventDefault();
       console.log("PostForm - Formulario enviado");
 
@@ -81,11 +82,28 @@ class PostForm extends HTMLElement {
           this.selectedFile ? "Sí" : "No"
         );
 
+        let imageUrl: string | undefined;
+
+        if (this.selectedFile) {
+          try {
+            const result = await uploadMeme(this.selectedFile);
+            if (result) {
+              imageUrl = result.url;
+            }
+          } catch (error) {
+            console.error("Error al subir la imagen:", error);
+            const errorElement =
+              this.shadowRoot?.querySelector(".error-message");
+            if (errorElement) {
+              errorElement.textContent =
+                "Error al subir la imagen. Por favor, intenta de nuevo.";
+            }
+            return;
+          }
+        }
+
         // Usar la acción del Store para crear el post
-        PostActions.createPost(
-          contentInput.value.trim(),
-          this.selectedFile || undefined
-        );
+        PostActions.createPost(contentInput.value.trim(), imageUrl);
         console.log("PostForm - Acción createPost disparada");
 
         // Limpiar el formulario
@@ -199,113 +217,78 @@ class PostForm extends HTMLElement {
           background: var(--secondary-hover);
           transform: translateY(-1px);
         }
-        
+
         .upload-btn:active {
           transform: translateY(0);
         }
-        
-        button[type="submit"] {
+
+        .submit-btn {
           background: var(--primary-color);
           color: white;
           border: none;
           padding: 12px 24px;
           border-radius: 6px;
           cursor: pointer;
-          font-weight: 600;
+          font-weight: 500;
           font-size: 1rem;
-          align-self: flex-end;
           transition: all 0.2s ease;
+          align-self: flex-end;
         }
-        
-        button[type="submit"]:hover {
+
+        .submit-btn:hover {
           background: var(--primary-hover);
           transform: translateY(-1px);
         }
-        
-        button[type="submit"]:active {
+
+        .submit-btn:active {
           transform: translateY(0);
         }
 
         .error-message {
           color: var(--accent-color);
-          margin-top: 10px;
+          margin: 10px 0;
           text-align: center;
-          font-size: 0.9rem;
         }
 
-        .auth-message {
-          text-align: center;
-          padding: 30px;
-          background: var(--primary-light);
-          border-radius: var(--border-radius);
-          color: var(--text-secondary);
-          border: 1px solid var(--border-color);
-        }
-        
-        .auth-message h3 {
-          color: var(--primary-color);
-          font-size: 1.5rem;
-          margin-bottom: 10px;
-          font-weight: 600;
-        }
-        
-        .auth-message p {
-          font-size: 1rem;
-          line-height: 1.6;
-        }
-        
         @media (max-width: 768px) {
           .post-form {
             padding: 20px;
           }
           
           textarea {
-            min-height: 100px;
-            font-size: 0.95rem;
+            width: 100%;
           }
           
-          button[type="submit"] {
+          .submit-btn {
             width: 100%;
-            font-size: 0.95rem;
-          }
-          
-          .upload-btn {
-            width: 100%;
-            text-align: center;
           }
         }
       </style>
       
       <div class="post-form">
-        ${
-          isAuthenticated
-            ? `<form>
-                <textarea 
-                  id="content" 
-                  placeholder="¿Qué estás pensando?"
-                  required
-                ></textarea>
-                <div class="image-upload-container">
-                  <input type="file" id="image-upload" accept="image/*" style="display: none;">
-                  <button type="button" class="upload-btn" onclick="this.previousElementSibling.click()">
-                    Subir imagen
-                  </button>
-                  <img class="image-preview" alt="Vista previa">
-                </div>
-                <button type="submit">Publicar</button>
-                <div class="error-message"></div>
-              </form>`
-            : `<div class="auth-message">
-                <h3>Inicia sesión para publicar</h3>
-                <p>Necesitas estar autenticado para crear publicaciones</p>
-              </div>`
-        }
+        <form>
+          <textarea
+            id="content"
+            placeholder="¿Qué estás pensando?"
+            required
+          ></textarea>
+          <div class="image-upload-container">
+            <input
+              type="file"
+              id="image-upload"
+              accept="image/*"
+              style="display: none"
+            />
+            <label for="image-upload" class="upload-btn">
+              Subir imagen
+            </label>
+            <img class="image-preview" alt="Vista previa" />
+          </div>
+          <div class="error-message"></div>
+          <button type="submit" class="submit-btn">Publicar</button>
+        </form>
       </div>
     `;
-
-    if (isAuthenticated) {
-      this.setupListeners();
-    }
   }
 }
 
