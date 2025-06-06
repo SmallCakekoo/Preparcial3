@@ -60,23 +60,46 @@ export const loginUser = async (email: string, password: string) => {
     const userDoc = await getDoc(doc(db, "users", user.uid));
     const userData = userDoc.data();
 
+    if (!userData) {
+      throw new Error(
+        "No se encontró la información del usuario en la base de datos"
+      );
+    }
+
     // Guardar información en localStorage
     localStorage.setItem("userId", user.uid);
     localStorage.setItem("userEmail", email);
-    if (userData) {
-      localStorage.setItem("username", userData.username);
-      localStorage.setItem("userRole", userData.role);
-    }
+    localStorage.setItem("username", userData.username);
+    localStorage.setItem("userRole", userData.role);
 
     return {
       success: true,
       user,
       userData,
-      isAdmin: userData?.role === "admin",
+      isAdmin: userData.role === "admin",
     };
-  } catch (error) {
+  } catch (error: any) {
     console.error("Error al iniciar sesión:", error);
-    return { success: false, error };
+
+    let errorMessage = "Error al iniciar sesión";
+
+    if (error.code === "auth/invalid-credential") {
+      errorMessage = "Email o contraseña incorrectos";
+    } else if (error.code === "auth/user-not-found") {
+      errorMessage = "No existe una cuenta con este email";
+    } else if (error.code === "auth/wrong-password") {
+      errorMessage = "Contraseña incorrecta";
+    } else if (error.code === "auth/too-many-requests") {
+      errorMessage =
+        "Demasiados intentos fallidos. Por favor, intenta más tarde";
+    } else if (error.code === "auth/user-disabled") {
+      errorMessage = "Esta cuenta ha sido deshabilitada";
+    }
+
+    return {
+      success: false,
+      error: errorMessage,
+    };
   }
 };
 

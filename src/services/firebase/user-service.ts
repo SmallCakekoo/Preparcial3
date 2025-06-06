@@ -62,15 +62,13 @@ export const deleteUser = async (userId: string): Promise<boolean> => {
       throw new Error("No puedes eliminar tu propia cuenta desde aquí");
     }
 
-    // Intentar eliminar el usuario de Authentication si es el usuario actual
-    if (currentUser.uid === userId) {
-      await deleteAuthUser(currentUser);
-    } else {
-      // Si no podemos eliminar directamente, al menos eliminamos de Firestore
-      console.warn(
-        "No se pudo eliminar el usuario de Authentication, pero se eliminó de Firestore"
-      );
-    }
+    // Nota: Por limitaciones de seguridad de Firebase, solo podemos eliminar usuarios de Authentication
+    // cuando son el usuario actual. Para eliminar otros usuarios, necesitamos un backend.
+    console.warn(
+      "El usuario ha sido desactivado exitosamente. " +
+        "Sus datos han sido eliminados de la base de datos y no podrá acceder a la aplicación. " +
+        "Para eliminar completamente su cuenta de autenticación, se requiere implementar un backend con Firebase Admin SDK."
+    );
 
     return true;
   } catch (error) {

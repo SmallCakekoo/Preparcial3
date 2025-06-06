@@ -1,6 +1,5 @@
 import { Post } from "../types/SrcTypes";
 // import { PostActions } from "../flux/Actions";
-import { deletePost } from "../services/supabase/post-service";
 
 class PostCard extends HTMLElement {
   private post: Post | null = null;
@@ -30,20 +29,6 @@ class PostCard extends HTMLElement {
 
   connectedCallback() {
     this.render();
-    this.setupListeners();
-  }
-
-  setupListeners() {
-    const deleteButton = this.shadowRoot?.querySelector(".delete-btn");
-    deleteButton?.addEventListener("click", async () => {
-      if (this.post) {
-        try {
-          await deletePost(this.post.id);
-        } catch (error) {
-          console.error("Error al eliminar el post:", error);
-        }
-      }
-    });
   }
 
   render() {
@@ -128,27 +113,6 @@ class PostCard extends HTMLElement {
           border-top: 1px solid var(--border-color);
         }
         
-        .delete-btn {
-          background: var(--accent-color);
-          color: white;
-          border: none;
-          padding: 8px 16px;
-          border-radius: 6px;
-          font-size: 0.9rem;
-          font-weight: 500;
-          cursor: pointer;
-          transition: all 0.2s ease;
-        }
-        
-        .delete-btn:hover {
-          background: #e01e6f;
-          transform: translateY(-1px);
-        }
-        
-        .delete-btn:active {
-          transform: translateY(0);
-        }
-        
         @media (max-width: 768px) {
           .post-card {
             padding: 20px;
@@ -162,17 +126,12 @@ class PostCard extends HTMLElement {
             font-size: 0.95rem;
           }
           
-          .delete-btn {
-            padding: 6px 12px;
-            font-size: 0.85rem;
-          }
         }
       </style>
       
       <div class="post-card">
         <div class="post-header">
           <span class="post-author">${this.post.authorName}</span>
-          <button class="delete-btn">Eliminar</button>
         </div>
         <div class="post-content">
           ${this.post.content}
