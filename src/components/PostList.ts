@@ -117,7 +117,10 @@ class PostList extends HTMLElement {
             : this.posts
                 .map(
                   (post) => `
-              <post-card post='${JSON.stringify(post)}'></post-card>
+              <post-card post='${JSON.stringify(post).replace(
+                /'/g,
+                "&apos;"
+              )}'></post-card>
             `
                 )
                 .join("")

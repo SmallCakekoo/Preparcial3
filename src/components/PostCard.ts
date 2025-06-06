@@ -1,6 +1,6 @@
 import { Post } from "../types/SrcTypes";
 // import { PostActions } from "../flux/Actions";
-import { deletePost } from "../services/firebase/post-service";
+import { deletePost } from "../services/supabase/post-service";
 
 class PostCard extends HTMLElement {
   private post: Post | null = null;
@@ -16,8 +16,15 @@ class PostCard extends HTMLElement {
 
   attributeChangedCallback(name: string, oldValue: string, newValue: string) {
     if (name === "post" && newValue) {
-      this.post = JSON.parse(newValue);
-      this.render();
+      try {
+        // Reemplazar las entidades HTML antes de parsear
+        const decodedValue = newValue.replace(/&apos;/g, "'");
+        this.post = JSON.parse(decodedValue);
+        this.render();
+      } catch (error) {
+        console.error("Error al parsear el post:", error);
+        console.error("Valor recibido:", newValue);
+      }
     }
   }
 

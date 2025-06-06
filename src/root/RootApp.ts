@@ -1,6 +1,8 @@
 import { store } from "../flux/Store";
 
 class RootApp extends HTMLElement {
+  private lastPath: string = window.location.pathname;
+
   constructor() {
     super();
     this.attachShadow({ mode: "open" });
@@ -17,14 +19,16 @@ class RootApp extends HTMLElement {
     console.log("State changed, current path:", state.currentPath);
     console.log("Window location path:", window.location.pathname);
 
-    // Actualizar la ruta si es diferente
-    if (state.currentPath && state.currentPath !== window.location.pathname) {
+    // Actualizar la ruta si es diferente y no es la misma que la última manejada
+    if (
+      state.currentPath &&
+      state.currentPath !== window.location.pathname &&
+      state.currentPath !== this.lastPath
+    ) {
       console.log("Path mismatch, updating route");
+      this.lastPath = state.currentPath;
       window.history.pushState({}, "", state.currentPath);
-      // Forzar la actualización de la vista
-      setTimeout(() => {
-        this.handleRouteChange();
-      }, 0);
+      this.handleRouteChange();
     }
   }
 
@@ -35,6 +39,7 @@ class RootApp extends HTMLElement {
     // Escuchar cambios en el historial del navegador
     window.addEventListener("popstate", () => {
       console.log("PopState event triggered");
+      this.lastPath = window.location.pathname;
       this.handleRouteChange();
     });
 
@@ -42,6 +47,7 @@ class RootApp extends HTMLElement {
     window.addEventListener("navigate", ((event: CustomEvent) => {
       console.log("Navigate event triggered:", event.detail);
       const path = event.detail.path;
+      this.lastPath = path;
       window.history.pushState({}, "", path);
       this.handleRouteChange();
     }) as EventListener);
@@ -54,17 +60,10 @@ class RootApp extends HTMLElement {
         const href = target.getAttribute("href");
         if (href) {
           console.log("Link clicked, navigating to:", href);
+          this.lastPath = href;
           window.history.pushState({}, "", href);
           this.handleRouteChange();
         }
-      }
-    });
-
-    // Suscribirse a cambios en el store
-    store.subscribe(() => {
-      const state = store.getState();
-      if (state.currentPath) {
-        this.handleRouteChange();
       }
     });
   }

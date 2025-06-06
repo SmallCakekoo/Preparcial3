@@ -21,7 +21,7 @@ export async function uploadMeme(file: File): Promise<Meme | null> {
       fileType = "gif";
     }
 
-    const MAX_FILE_SIZE = 50 * 1024 * 1024; // Aumentamos a 50MB para videos, limita el tamaño de los videos
+    const MAX_FILE_SIZE = 50 * 1024 * 1024; // 50MB para videos
     if (file.size > MAX_FILE_SIZE) {
       throw new Error(
         "El archivo es demasiado grande. El tamaño máximo es 50MB"
@@ -32,7 +32,7 @@ export async function uploadMeme(file: File): Promise<Meme | null> {
     const fileName = `${Date.now()}_${Math.random()
       .toString(36)
       .substring(7)}.${fileExt}`;
-    const filePath = `memes/${fileName}`;
+    const filePath = `preparcial/${fileName}`;
 
     const { error: uploadError } = await supabase.storage
       .from("imagessocial")
@@ -61,7 +61,7 @@ export async function uploadMeme(file: File): Promise<Meme | null> {
       type: fileType,
     };
   } catch (error) {
-    console.error("Error al subir el meme:", error);
+    console.error("Error al subir el archivo:", error);
     throw error;
   }
 }
@@ -70,18 +70,20 @@ export async function getMemes(): Promise<Meme[]> {
   try {
     const { data, error } = await supabase.storage
       .from("imagessocial")
-      .list("memes", {
+      .list("preparcial", {
         limit: 100,
         offset: 0,
         sortBy: { column: "name", order: "desc" },
       });
 
     if (error) {
-      console.error("Error al obtener la lista de memes:", error.message);
+      console.error("Error al obtener la lista de archivos:", error.message);
       if (error.message.includes("permission denied")) {
         throw new Error("No tienes permisos para ver los archivos.");
       }
-      throw new Error(`Error al obtener la lista de memes: ${error.message}`);
+      throw new Error(
+        `Error al obtener la lista de archivos: ${error.message}`
+      );
     }
 
     if (!data || data.length === 0) {
@@ -99,7 +101,7 @@ export async function getMemes(): Promise<Meme[]> {
           data: { publicUrl },
         } = supabase.storage
           .from("imagessocial")
-          .getPublicUrl(`memes/${file.name}`);
+          .getPublicUrl(`preparcial/${file.name}`);
 
         // Determinar el tipo basado en la extensión del archivo
         const fileExt = file.name.split(".").pop()?.toLowerCase() || "";
@@ -121,7 +123,7 @@ export async function getMemes(): Promise<Meme[]> {
 
     return memes;
   } catch (error) {
-    console.error("Error al obtener los memes:", error);
+    console.error("Error al obtener los archivos:", error);
     throw error;
   }
 }
