@@ -128,9 +128,6 @@ class PostForm extends HTMLElement {
   render() {
     if (!this.shadowRoot) return;
 
-    const state = store.getState();
-    const isAuthenticated = state.isAuthenticated && state.currentUser;
-
     this.shadowRoot.innerHTML = `
       <style>
         @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&display=swap');

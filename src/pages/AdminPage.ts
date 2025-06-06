@@ -6,9 +6,12 @@ import {
   deleteUser,
   UserData,
 } from "../services/firebase/user-service";
+import { getPosts, deletePost } from "../services/firebase/post-service";
+import { Post } from "../types/SrcTypes";
 
 class AdminPage extends HTMLElement {
   private users: UserData[] = [];
+  private posts: Post[] = [];
 
   constructor() {
     super();
@@ -18,6 +21,7 @@ class AdminPage extends HTMLElement {
   connectedCallback() {
     this.render();
     this.loadUsers();
+    this.loadPosts();
     store.subscribe(this.handleStateChange.bind(this));
   }
 
@@ -43,6 +47,15 @@ class AdminPage extends HTMLElement {
       this.render();
     } catch (error) {
       console.error("Error al cargar usuarios:", error);
+    }
+  }
+
+  async loadPosts() {
+    try {
+      this.posts = await getPosts();
+      this.render();
+    } catch (error) {
+      console.error("Error al cargar publicaciones:", error);
     }
   }
 
@@ -80,6 +93,24 @@ class AdminPage extends HTMLElement {
         }
 
         alert(errorMessage);
+      }
+    }
+  }
+
+  async handleDeletePost(postId: string) {
+    if (
+      confirm(
+        "¿Estás seguro de que deseas eliminar esta publicación? Esta acción no se puede deshacer."
+      )
+    ) {
+      try {
+        await deletePost(postId);
+        this.posts = this.posts.filter((post) => post.id !== postId);
+        this.render();
+        alert("Publicación eliminada exitosamente");
+      } catch (error) {
+        console.error("Error al eliminar publicación:", error);
+        alert("Error al eliminar la publicación");
       }
     }
   }
@@ -139,6 +170,13 @@ class AdminPage extends HTMLElement {
           font-weight: 700;
         }
 
+        h2 {
+          color: var(--text-color);
+          font-size: 1.8rem;
+          margin: 40px 0 20px;
+          font-weight: 600;
+        }
+
         .logout-btn {
           background: var(--secondary-color);
           color: white;
@@ -164,7 +202,7 @@ class AdminPage extends HTMLElement {
           height: 16px;
         }
         
-        .users-table {
+        .users-table, .posts-table {
           width: 100%;
           background: var(--card-bg);
           border-radius: var(--border-radius);
@@ -173,25 +211,29 @@ class AdminPage extends HTMLElement {
           margin-top: 20px;
         }
 
-        .users-table table {
+        .users-table table, .posts-table table {
           width: 100%;
           border-collapse: collapse;
         }
 
         .users-table th,
-        .users-table td {
+        .users-table td,
+        .posts-table th,
+        .posts-table td {
           padding: 15px;
           text-align: left;
           border-bottom: 1px solid var(--border-color);
         }
 
-        .users-table th {
+        .users-table th,
+        .posts-table th {
           background: var(--primary-light);
           color: var(--primary-color);
           font-weight: 600;
         }
 
-        .users-table tr:hover {
+        .users-table tr:hover,
+        .posts-table tr:hover {
           background: var(--background-color);
         }
 
@@ -230,10 +272,17 @@ class AdminPage extends HTMLElement {
           transform: translateY(-2px);
         }
 
-        .no-users {
+        .no-users, .no-posts {
           text-align: center;
           padding: 40px;
           color: var(--text-secondary);
+        }
+
+        .post-content {
+          max-width: 300px;
+          overflow: hidden;
+          text-overflow: ellipsis;
+          white-space: nowrap;
         }
       </style>
       
@@ -241,7 +290,7 @@ class AdminPage extends HTMLElement {
         <div class="admin-header">
           <div class="header-content">
             <h1>Panel de Administración</h1>
-            <p>Gestión de usuarios del sistema</p>
+            <p>Gestión de usuarios y publicaciones del sistema</p>
           </div>
           <button class="logout-btn" id="logout-btn">
             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -251,6 +300,7 @@ class AdminPage extends HTMLElement {
           </button>
         </div>
         
+        <h2>Usuarios</h2>
         <div class="users-table">
           ${
             this.users.length > 0
@@ -297,16 +347,73 @@ class AdminPage extends HTMLElement {
           `
           }
         </div>
+
+        <h2>Publicaciones</h2>
+        <div class="posts-table">
+          ${
+            this.posts.length > 0
+              ? `
+            <table>
+              <thead>
+                <tr>
+                  <th>Autor</th>
+                  <th>Contenido</th>
+                  <th>Fecha</th>
+                  <th>Acciones</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${this.posts
+                  .map(
+                    (post) => `
+                  <tr>
+                    <td>${post.authorName}</td>
+                    <td class="post-content">${post.content}</td>
+                    <td>${post.createdAt.toLocaleDateString()}</td>
+                    <td>
+                      <button class="delete-btn" data-post-id="${post.id}">
+                        Eliminar
+                      </button>
+                    </td>
+                  </tr>
+                `
+                  )
+                  .join("")}
+              </tbody>
+            </table>
+          `
+              : `
+            <div class="no-posts">
+              <p>No hay publicaciones</p>
+            </div>
+          `
+          }
+        </div>
       </div>
     `;
 
-    // Agregar event listeners para los botones de eliminar
-    const deleteButtons = this.shadowRoot.querySelectorAll(".delete-btn");
-    deleteButtons.forEach((button) => {
+    // Agregar event listeners para los botones de eliminar usuarios
+    const deleteUserButtons = this.shadowRoot.querySelectorAll(
+      ".users-table .delete-btn"
+    );
+    deleteUserButtons.forEach((button) => {
       button.addEventListener("click", (e) => {
         const userId = (e.target as HTMLElement).dataset.userId;
         if (userId) {
           this.handleDeleteUser(userId);
+        }
+      });
+    });
+
+    // Agregar event listeners para los botones de eliminar publicaciones
+    const deletePostButtons = this.shadowRoot.querySelectorAll(
+      ".posts-table .delete-btn"
+    );
+    deletePostButtons.forEach((button) => {
+      button.addEventListener("click", (e) => {
+        const postId = (e.target as HTMLElement).dataset.postId;
+        if (postId) {
+          this.handleDeletePost(postId);
         }
       });
     });

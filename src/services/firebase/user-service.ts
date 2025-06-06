@@ -1,7 +1,6 @@
 import { db } from "./firebase-config";
 import { collection, getDocs, deleteDoc, doc } from "firebase/firestore";
 import { auth } from "./firebase-config";
-import { deleteUser as deleteAuthUser } from "firebase/auth";
 
 export interface UserData {
   uid: string;

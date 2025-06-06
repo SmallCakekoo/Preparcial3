@@ -1,4 +1,4 @@
-// import firebaseComponent from "./components/firebase-component";
+
 import RootApp from "./root/RootApp";
 import LoginForm from "./components/LoginForm";
 import PostCard from "./components/PostCard";
@@ -9,7 +9,6 @@ import MenuPage from "./pages/MenuPage";
 import PostPage from "./pages/PostPage";
 import AdminPage from "./pages/AdminPage";
 
-// customElements.define("firebase-component", firebaseComponent);
 customElements.define("root-app", RootApp);
 customElements.define("login-form", LoginForm);
 customElements.define("post-card", PostCard);

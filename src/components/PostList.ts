@@ -1,6 +1,5 @@
 import { store } from "../flux/Store";
 import { Post, AppState } from "../types/SrcTypes";
-import { PostActions } from "../flux/Actions";
 
 class PostList extends HTMLElement {
   private posts: Post[] = [];

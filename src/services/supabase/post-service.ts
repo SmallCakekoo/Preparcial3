@@ -1,11 +1,6 @@
 import { supabase } from "./SupabaseConfig";
 import { Post } from "../../types/SrcTypes";
 
-interface UserData {
-  display_name?: string;
-  username?: string;
-}
-
 export const createPost = async (
   content: string,
   userId: string,

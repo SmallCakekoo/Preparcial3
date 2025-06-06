@@ -78,22 +78,25 @@ export const loginUser = async (email: string, password: string) => {
       userData,
       isAdmin: userData.role === "admin",
     };
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Error al iniciar sesión:", error);
 
     let errorMessage = "Error al iniciar sesión";
 
-    if (error.code === "auth/invalid-credential") {
-      errorMessage = "Email o contraseña incorrectos";
-    } else if (error.code === "auth/user-not-found") {
-      errorMessage = "No existe una cuenta con este email";
-    } else if (error.code === "auth/wrong-password") {
-      errorMessage = "Contraseña incorrecta";
-    } else if (error.code === "auth/too-many-requests") {
-      errorMessage =
-        "Demasiados intentos fallidos. Por favor, intenta más tarde";
-    } else if (error.code === "auth/user-disabled") {
-      errorMessage = "Esta cuenta ha sido deshabilitada";
+    if (error && typeof error === "object" && "code" in error) {
+      const errorCode = (error as { code: string }).code;
+      if (errorCode === "auth/invalid-credential") {
+        errorMessage = "Email o contraseña incorrectos";
+      } else if (errorCode === "auth/user-not-found") {
+        errorMessage = "No existe una cuenta con este email";
+      } else if (errorCode === "auth/wrong-password") {
+        errorMessage = "Contraseña incorrecta";
+      } else if (errorCode === "auth/too-many-requests") {
+        errorMessage =
+          "Demasiados intentos fallidos. Por favor, intenta más tarde";
+      } else if (errorCode === "auth/user-disabled") {
+        errorMessage = "Esta cuenta ha sido deshabilitada";
+      }
     }
 
     return {
